@@ -1,2 +1,9 @@
+core/
+db-clients/
+db-users/
+2fa/
+shared/
+
 .idea
+.env.local
 

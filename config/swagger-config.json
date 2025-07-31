@@ -1,0 +1,8 @@
+{
+  "urls": [
+    { "url": "http://host.docker.internal/users/api/v1/openapi.yaml", "name": "DB Users" },
+    { "url": "http://host.docker.internal/clients/api/v1/openapi.yaml", "name": "DB Clients" },
+    { "url": "http://host.docker.internal/2fa/api/v1/openapi.yaml", "name": "Tow-factor authentication" }
+  ],
+  "validatorUrl": null
+}
