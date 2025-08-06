@@ -23,6 +23,7 @@ services:
       TEST_DATA_GROUP_NAME: ${TEST_DATA_GROUP_NAME}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
       - database-server
     networks:
@@ -44,6 +45,7 @@ services:
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
       - database-server
     networks:
@@ -65,6 +67,7 @@ services:
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
       - database-server
     networks:
@@ -86,6 +89,7 @@ services:
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
       - database-server
     networks:
@@ -95,10 +99,15 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
+      - protected.example.com:${HOST_GW:-host-gateway}
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/certificates/_wildcard.example.com+3.pem:/etc/nginx/certs/example.com.crt:ro
+      - ./config/certificates/_wildcard.example.com+3-key.pem:/etc/nginx/certs/example.com.key:ro
     networks:
       - my-network
 
@@ -111,6 +120,9 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    extra_hosts:
+      - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     networks:
       - my-network
 
@@ -118,6 +130,11 @@ services:
     image: redis:alpine
     ports:
       - "9008:6379"
+    extra_hosts:
+      - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
+    networks:
+      - my-network
 
   redis-commander:
     image: rediscommander/redis-commander:latest
@@ -125,17 +142,25 @@ services:
       - REDIS_HOSTS=local:redis:6379
     ports:
       - "9007:8081"
+    extra_hosts:
+      - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
       - redis
+    networks:
+      - my-network
 
   swagger-ui:
     image: swaggerapi/swagger-ui
     ports:
-      - "9009:8080"
+      - 9009:8080
     volumes:
       - ./config/swagger-config.json:/usr/share/nginx/html/swagger-config.json
     environment:
       CONFIG_URL: /swagger/swagger-config.json
+    extra_hosts:
+      - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     networks:
       - my-network
 
@@ -146,6 +171,9 @@ services:
       ADMINER_DEFAULT_SERVER: database-server
     ports:
       - 9005:8080
+    extra_hosts:
+      - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
     networks:
       - my-network
 
@@ -156,6 +184,27 @@ services:
     ports:
       - 9025:1025 # smtp server
       - 9026:8025 # web ui
+    extra_hosts:
+      - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
+    networks:
+      - my-network
+
+  oidc-test-client:
+    image: ghcr.io/beryju/oidc-test-client
+    ports:
+      - 9010:9009
+    environment:
+      OIDC_CLIENT_ID: ${TEST_DATA_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${TEST_DATA_CLIENT_SECRET}
+      OIDC_PROVIDER: "https://auth.example.com"
+      OIDC_ROOT_URL: "https://protected.example.com"
+      OIDC_TLS_VERIFY: "false"
+      OIDC_DO_INTROSPECTION: "false"
+    extra_hosts:
+      - host.docker.internal:${HOST_GW:-host-gateway}
+      - auth.example.com:${HOST_GW:-host-gateway}
+    restart: unless-stopped
     networks:
       - my-network
 

@@ -19,7 +19,45 @@ git clone https://github.com/sgoranov/identity-link-2fa.git 2fa
 These repositories should exist as local folders inside identity-link-docker, 
 matching the directory structure expected by Docker Compose.
 
-### Start the services
+
+## Setup TLS Certificates 
+
+Before starting the Docker services, you need to generate and install the required TLS certificates using 
+mkcert. This step ensures secure HTTPS communication for your local environment.
+
+Run the following commands:
+
+```bash
+cd config/certificates
+mkcert --install
+mkcert "*.example.com" localhost 127.0.0.1 ::1
+```
+
+ - `mkcert --install` sets up a local Certificate Authority (CA) trusted by your system.
+ - The second mkcert command generates certificates for the specified domains and IPs.
+ - These certificates are used by the Docker services to enable HTTPS locally.
+
+Make sure you have mkcert installed on your machine before running these commands.
+
+## Update Your Hosts File
+
+To properly test the system locally, you must add the following entries to your 
+system's hosts file:
+
+```text
+127.0.0.1 protected.example.com
+127.0.0.1 auth.example.com
+```
+
+### Why is this necessary?
+
+- **auth.example.com** represents the **Identity Link** service.
+- **protected.example.com** represents the **oidc-test-client**, which you can use to test the OpenID Connect authentication flow.
+
+By mapping these domains to `127.0.0.1`, your local machine will resolve requests for these test domains to your Docker services, enabling HTTPS with the certificates you generated.
+
+
+## Start/Stop the Services
 
 ```bash
 ./start.sh
@@ -30,7 +68,6 @@ This will:
  - Load environment variables from .env and .env.local (if present)
  - Launch all required containers in detached mode using Docker Compose
 
-### Stop the services
 
 ```bash
 ./stop.sh
@@ -71,24 +108,23 @@ separate from the application’s Symfony .env file.
 The Docker .env is used only by Docker Compose and defines the 
 setup parameters needed to build and run the containers.
 
-
 **Note:** DB_USER and DB_PASSWORD must match between Docker’s environment and 
 your Symfony application’s .env configuration, or the application will fail 
 to connect to the database.
 
 ### List of Environment Variables
 
-| Variable                  | Description                                         | Example Value                           |
-|---------------------------|-----------------------------------------------------|-----------------------------------------|
-| `DB_USER`                 | Database username (shared between app and services) | `admin`                                 |
-| `DB_PASSWORD`             | Database password (shared between app and services) | `admin`                                 |
-| `TEST_DATA_GENERATION`    | Enable automatic test data generation               | `1`                                     |
-| `TEST_DATA_CLIENT_ID`     | Test client ID used for sample data                 | `client`                                |
-| `TEST_DATA_CLIENT_SECRET` | Test client secret                                  | `client`                                |
-| `TEST_DATA_REDIRECT_URI`  | Redirect URI for OAuth test client                  | `https://example.com/oauth/login/check` |
-| `TEST_DATA_USER_NAME`     | Username for the seeded test user                   | `user`                                  |
-| `TEST_DATA_USER_PASS`     | Password hash for the test user (e.g., bcrypt)      | `4336b78adc9946baacb46a61630c2b45`      |
-| `TEST_DATA_GROUP_NAME`    | Name of the group assigned to the test user         | `administrator`                         |
+| Variable                  | Description                                         | Example Value                                 |
+|---------------------------|-----------------------------------------------------|-----------------------------------------------|
+| `DB_USER`                 | Database username (shared between app and services) | `ChangeMe`                                    |
+| `DB_PASSWORD`             | Database password (shared between app and services) | `ChangeMe`                                    |
+| `TEST_DATA_GENERATION`    | Enable automatic test data generation               | `1`                                           |
+| `TEST_DATA_CLIENT_ID`     | Test client ID used for sample data                 | `client`                                      |
+| `TEST_DATA_CLIENT_SECRET` | Test client secret                                  | `client`                                      |
+| `TEST_DATA_REDIRECT_URI`  | Redirect URI for OAuth test client                  | `https://protected.example.com/auth/callback` |
+| `TEST_DATA_USER_NAME`     | Username for the seeded test user                   | `user`                                        |
+| `TEST_DATA_USER_PASS`     | Password hash for the test user (e.g., bcrypt)      | `pass`                                        |
+| `TEST_DATA_GROUP_NAME`    | Name of the group assigned to the test user         | `group`                                       |
 
 ## Additional Docker Services
 

@@ -3,6 +3,7 @@ db-clients/
 db-users/
 2fa/
 shared/
+config/certificates/*.pem
 
 .idea
 .env.local
