@@ -93,7 +93,6 @@ Then add only the variables you want to override:
 
 ```dotenv
 DB_PASSWORD=mysecret
-TEST_DATA_CLIENT_ID=my-client
 ```
 
 The .env.local file is automatically loaded when running start.sh or stop.sh.
@@ -118,8 +117,6 @@ to connect to the database.
 |---------------------------|-----------------------------------------------------|-----------------------------------------------|
 | `DB_USER`                 | Database username (shared between app and services) | `ChangeMe`                                    |
 | `DB_PASSWORD`             | Database password (shared between app and services) | `ChangeMe`                                    |
-| `TEST_DATA_GENERATION`    | Enable automatic test data generation               | `1`                                           |
-| `TEST_DATA_CLIENT_ID`     | Test client ID used for sample data                 | `client`                                      |
 | `TEST_DATA_CLIENT_SECRET` | Test client secret                                  | `client`                                      |
 | `TEST_DATA_REDIRECT_URI`  | Redirect URI for OAuth test client                  | `https://protected.example.com/auth/callback` |
 | `TEST_DATA_USER_NAME`     | Username for the seeded test user                   | `user`                                        |

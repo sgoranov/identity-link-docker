@@ -14,13 +14,6 @@ services:
       PGHOST: database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
-      TEST_DATA_GENERATION: ${TEST_DATA_GENERATION}
-      TEST_DATA_CLIENT_ID: ${TEST_DATA_CLIENT_ID}
-      TEST_DATA_CLIENT_SECRET: ${TEST_DATA_CLIENT_SECRET}
-      TEST_DATA_REDIRECT_URI: ${TEST_DATA_REDIRECT_URI}
-      TEST_DATA_USER_NAME: ${TEST_DATA_USER_NAME}
-      TEST_DATA_USER_PASS: ${TEST_DATA_USER_PASS}
-      TEST_DATA_GROUP_NAME: ${TEST_DATA_GROUP_NAME}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
@@ -187,24 +180,6 @@ services:
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
-    networks:
-      - my-network
-
-  oidc-test-client:
-    image: ghcr.io/beryju/oidc-test-client
-    ports:
-      - 9010:9009
-    environment:
-      OIDC_CLIENT_ID: ${TEST_DATA_CLIENT_ID}
-      OIDC_CLIENT_SECRET: ${TEST_DATA_CLIENT_SECRET}
-      OIDC_PROVIDER: "https://auth.example.com"
-      OIDC_ROOT_URL: "https://protected.example.com"
-      OIDC_TLS_VERIFY: "false"
-      OIDC_DO_INTROSPECTION: "false"
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
-    restart: unless-stopped
     networks:
       - my-network
 
