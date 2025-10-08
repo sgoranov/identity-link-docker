@@ -1,94 +1,95 @@
 services:
 
-  core:
-    container_name: core
+  identity-link-core:
+    container_name: identity-link-core
     privileged: true
     build:
-      context: ./core
+      context: ./identity-link-core
     image: identity-link-core
     ports:
       - 9000:80
     volumes:
-      - ./core:/var/www
+      - ./identity-link-core:/var/www
     environment:
-      PGHOST: database-server
+      PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - database-server
+      - identity-link-database-server
     networks:
-      - my-network
+      - identity-link-network
 
-  db-users:
-    container_name: db-users
+  identity-link-db-users:
+    container_name: identity-link-db-users
     privileged: true
     build:
-      context: ./db-users
+      context: ./identity-link-db-users
     image: identity-link-db-users
     ports:
       - 9001:80
     volumes:
-      - ./db-users:/var/www
+      - ./identity-link-db-users:/var/www
     environment:
-      PGHOST: database-server
+      PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - database-server
+      - identity-link-database-server
     networks:
-      - my-network
+      - identity-link-network
 
-  db-clients:
-    container_name: db-clients
+  identity-link-db-clients:
+    container_name: identity-link-db-clients
     privileged: true
     build:
-      context: ./db-clients
+      context: ./identity-link-db-clients
     image: identity-link-db-clients
     ports:
       - 9002:80
     volumes:
-      - ./db-clients:/var/www
+      - ./identity-link-db-clients:/var/www
     environment:
-      PGHOST: database-server
+      PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - database-server
+      - identity-link-database-server
     networks:
-      - my-network
+      - identity-link-network
 
-  2fa:
-    container_name: 2fa
+  identity-link-2fa:
+    container_name: identity-link-2fa
     privileged: true
     build:
-      context: ./2fa
+      context: ./identity-link-2fa
     image: identity-link-2fa
     ports:
       - 9003:80
     volumes:
-      - ./2fa:/var/www
+      - ./identity-link-2fa:/var/www
     environment:
-      PGHOST: database-server
+      PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - database-server
+      - identity-link-database-server
     networks:
-      - my-network
+      - identity-link-network
 
-  proxy:
+  identity-link-proxy:
+    container_name: identity-link-proxy
     image: nginx:alpine
     ports:
       - "80:80"
@@ -102,10 +103,10 @@ services:
       - ./config/certificates/_wildcard.example.com+3.pem:/etc/nginx/certs/example.com.crt:ro
       - ./config/certificates/_wildcard.example.com+3-key.pem:/etc/nginx/certs/example.com.key:ro
     networks:
-      - my-network
+      - identity-link-network
 
-  database-server:
-    container_name: database-server
+  identity-link-database-server:
+    container_name: identity-link-database-server
     image: postgres:15
     restart: always
     ports:
@@ -117,9 +118,10 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     networks:
-      - my-network
+      - identity-link-network
 
-  redis:
+  identity-link-redis:
+    container_name: identity-link-redis
     image: redis:alpine
     ports:
       - "9008:6379"
@@ -127,23 +129,25 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     networks:
-      - my-network
+      - identity-link-network
 
-  redis-commander:
+  identity-link-redis-commander:
+    container_name: identity-link-redis-commander
     image: rediscommander/redis-commander:latest
     environment:
-      - REDIS_HOSTS=local:redis:6379
+      - REDIS_HOSTS=local:identity-link-redis:6379
     ports:
       - "9007:8081"
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - redis
+      - identity-link-redis
     networks:
-      - my-network
+      - identity-link-network
 
-  swagger-ui:
+  identity-link-swagger-ui:
+    container_name: identity-link-swagger-ui
     image: swaggerapi/swagger-ui
     ports:
       - 9009:8080
@@ -155,22 +159,24 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     networks:
-      - my-network
+      - identity-link-network
 
-  adminer:
+  identity-link-adminer:
+    container_name: identity-link-adminer
     image: adminer
     restart: always
     environment:
-      ADMINER_DEFAULT_SERVER: database-server
+      ADMINER_DEFAULT_SERVER: identity-link-database-server
     ports:
       - 9005:8080
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     networks:
-      - my-network
+      - identity-link-network
 
-  smtp-server:
+  identity-link-smtp-server:
+    container_name: identity-link-smtp-server
     image: mailhog/mailhog
     logging:
       driver: 'none'  # disable saving logs
@@ -181,8 +187,9 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     networks:
-      - my-network
+      - identity-link-network
 
 networks:
-  my-network:
+  identity-link-network:
+    name: identity-link-network
     driver: bridge

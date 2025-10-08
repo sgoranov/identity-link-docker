@@ -7,7 +7,7 @@ MAX_RETRIES=30
 RETRIES=0
 
 URL=https://auth.example.com/.well-known/openid-configuration
-CONTAINER_NAME="core"
+CONTAINER_NAME="identity-link-core"
 
 echo "Waiting for $URL to respond..." >&2
 

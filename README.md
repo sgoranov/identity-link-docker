@@ -10,15 +10,27 @@ Before starting the services, make sure all required service repositories are
 cloned into this directory:
 
 ```bash
-git clone https://github.com/sgoranov/identity-link.git core
-git clone https://github.com/sgoranov/identity-link-db-users.git db-users
-git clone https://github.com/sgoranov/identity-link-db-clients.git db-clients
-git clone https://github.com/sgoranov/identity-link-2fa.git 2fa
+git clone https://github.com/sgoranov/identity-link.git identity-link-core
+git clone https://github.com/sgoranov/identity-link-db-users.git identity-link-db-users
+git clone https://github.com/sgoranov/identity-link-db-clients.git identity-link-db-clients
+git clone https://github.com/sgoranov/identity-link-2fa.git identity-link-2fa
 ```
 
 These repositories should exist as local folders inside identity-link-docker, 
 matching the directory structure expected by Docker Compose.
 
+If you already have these repositories checked out elsewhere, you can create 
+relative symbolic links instead of cloning again:
+
+```bash
+ln -rs ../existing/identity-link identity-link-core
+ln -rs ../existing/identity-link-db-users identity-link-db-users
+ln -rs ../existing/identity-link-db-clients identity-link-db-clients
+ln -rs ../existing/identity-link-2fa identity-link-2fa
+```
+
+Just make sure the symlinks resolve to valid folders on the host, because Docker Compose will mount 
+whatever they point to into the containers.
 
 ## Setup TLS Certificates 
 

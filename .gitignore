@@ -1,7 +1,7 @@
-core/
-db-clients/
-db-users/
-2fa/
+identity-link-core
+identity-link-db-clients
+identity-link-db-users
+identity-link-2fa
 shared/
 config/certificates/*.pem
 
