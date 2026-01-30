@@ -33,7 +33,36 @@ echo "Username: $USERNAME"
 echo "Password: $USER_PASS"
 
 echo
+echo "Starting identity-link-bff container with generated client credentials..."
+
+if docker ps -a --format '{{.Names}}' | grep -q '^identity-link-bff$'; then
+  docker stop identity-link-bff >/dev/null
+  docker rm identity-link-bff >/dev/null
+fi
+
+# Build image only if it does not exist yet to keep startup fast.
+if ! docker image inspect identity-link-bff >/dev/null 2>&1; then
+  docker build -t identity-link-bff ./identity-link-bff
+fi
+
+docker run -d --name identity-link-bff \
+  --privileged \
+  --network identity-link-network \
+  -p 9004:80 \
+  -v ./identity-link-bff:/var/www \
+  -e OIDC_CLIENT_ID="$CLIENT_ID" \
+  -e OIDC_CLIENT_SECRET="$CLIENT_SECRET" \
+  --add-host host.docker.internal:${HOST_GW:-host-gateway} \
+  --add-host auth.example.com:${HOST_GW:-host-gateway} \
+  identity-link-bff
+
+echo
 echo "Starting oidc-test-client container with generated client credentials..."
+
+if docker ps -a --format '{{.Names}}' | grep -q '^oidc-test-client$'; then
+  docker stop oidc-test-client >/dev/null
+  docker rm oidc-test-client >/dev/null
+fi
 
 docker run -d --name oidc-test-client \
   --network my-network \

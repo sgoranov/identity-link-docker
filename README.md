@@ -14,6 +14,7 @@ git clone https://github.com/sgoranov/identity-link.git identity-link-core
 git clone https://github.com/sgoranov/identity-link-db-users.git identity-link-db-users
 git clone https://github.com/sgoranov/identity-link-db-clients.git identity-link-db-clients
 git clone https://github.com/sgoranov/identity-link-2fa.git identity-link-2fa
+git clone https://github.com/sgoranov/identity-link-bff.git identity-link-bff
 ```
 
 These repositories should exist as local folders inside identity-link-docker, 
@@ -27,6 +28,7 @@ ln -rs ../existing/identity-link identity-link-core
 ln -rs ../existing/identity-link-db-users identity-link-db-users
 ln -rs ../existing/identity-link-db-clients identity-link-db-clients
 ln -rs ../existing/identity-link-2fa identity-link-2fa
+ln -rs ../existing/identity-link-2fa identity-link-bff
 ```
 
 Just make sure the symlinks resolve to valid folders on the host, because Docker Compose will mount 
@@ -125,15 +127,15 @@ to connect to the database.
 
 ### List of Environment Variables
 
-| Variable                  | Description                                         | Example Value                                 |
-|---------------------------|-----------------------------------------------------|-----------------------------------------------|
-| `DB_USER`                 | Database username (shared between app and services) | `ChangeMe`                                    |
-| `DB_PASSWORD`             | Database password (shared between app and services) | `ChangeMe`                                    |
-| `TEST_DATA_CLIENT_SECRET` | Test client secret                                  | `client`                                      |
-| `TEST_DATA_REDIRECT_URI`  | Redirect URI for OAuth test client                  | `https://protected.example.com/auth/callback` |
-| `TEST_DATA_USER_NAME`     | Username for the seeded test user                   | `user`                                        |
-| `TEST_DATA_USER_PASS`     | Password hash for the test user (e.g., bcrypt)      | `pass`                                        |
-| `TEST_DATA_GROUP_NAME`    | Name of the group assigned to the test user         | `group`                                       |
+| Variable                  | Description                                           | Example Value                                                                        |
+|---------------------------|-------------------------------------------------------|--------------------------------------------------------------------------------------|
+| `DB_USER`                 | Database username (shared between app and services)   | `ChangeMe`                                                                           |
+| `DB_PASSWORD`             | Database password (shared between app and services)   | `ChangeMe`                                                                           |
+| `TEST_DATA_CLIENT_SECRET` | Test client secret                                    | `client`                                                                             |
+| `TEST_DATA_REDIRECT_URIS` | Redirect URIs for OAuth test client (comma-separated) | `https://protected.example.com/auth/callback,https://ui.example.com/bff/login_check` |
+| `TEST_DATA_USER_NAME`     | Username for the seeded test user                     | `user`                                                                               |
+| `TEST_DATA_USER_PASS`     | Password hash for the test user (e.g., bcrypt)        | `pass`                                                                               |
+| `TEST_DATA_GROUP_NAME`    | Name of the group assigned to the test user           | `group`                                                                              |
 
 ## Additional Docker Services
 

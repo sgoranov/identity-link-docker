@@ -8,7 +8,7 @@ CLIENT_SECRET=$(uuidgen)
 # Use existing value if set and non-empty, otherwise assign defaults
 : "${TEST_DATA_GROUP_NAME:=administrator}"
 : "${TEST_DATA_CLIENT_NAME:=test-client-$(uuidgen)}"
-: "${TEST_DATA_REDIRECT_URI:=https://protected.example.com/auth/callback}"
+: "${TEST_DATA_REDIRECT_URIS:=https://protected.example.com/auth/callback,https://ui.example.com/bff/login_check}"
 : "${RETRY_INTERVAL:=3}"
 : "${MAX_RETRIES:=10}"
 
@@ -79,6 +79,21 @@ else
   echo "Created new group with ID: $GROUP_ID" >&2
 fi
 
+# Build JSON array for redirect URIs from comma-separated env var
+IFS=',' read -r -a redirect_uris <<< "$TEST_DATA_REDIRECT_URIS"
+redirect_uris_json="["
+for uri in "${redirect_uris[@]}"; do
+  uri_trimmed="${uri#"${uri%%[![:space:]]*}"}"
+  uri_trimmed="${uri_trimmed%"${uri_trimmed##*[![:space:]]}"}"
+  if [ -n "$uri_trimmed" ]; then
+    if [ "$redirect_uris_json" != "[" ]; then
+      redirect_uris_json+=", "
+    fi
+    redirect_uris_json+="\"$uri_trimmed\""
+  fi
+done
+redirect_uris_json+="]"
+
 # Create client
 echo "Creating client..." >&2
 response=$(curl -s -w "%{http_code}" --location "$CLIENT_API_URL/client" \
@@ -87,7 +102,7 @@ response=$(curl -s -w "%{http_code}" --location "$CLIENT_API_URL/client" \
     --data "{
         \"name\": \"$TEST_DATA_CLIENT_NAME\",
         \"description\": \"description\",
-        \"redirectUri\": \"$TEST_DATA_REDIRECT_URI\",
+        \"redirectUri\": $redirect_uris_json,
         \"grantTypes\": [\"client_credentials\", \"authorization_code\", \"password\", \"refresh_token\"],
         \"groups\": [\"$GROUP_ID\"],
         \"isPublic\": false

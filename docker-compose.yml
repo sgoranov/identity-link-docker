@@ -7,7 +7,7 @@ services:
       context: ./identity-link-core
     image: identity-link-core
     ports:
-      - 9000:80
+      - "9000:80"
     volumes:
       - ./identity-link-core:/var/www
     environment:
@@ -29,7 +29,7 @@ services:
       context: ./identity-link-db-users
     image: identity-link-db-users
     ports:
-      - 9001:80
+      - "9001:80"
     volumes:
       - ./identity-link-db-users:/var/www
     environment:
@@ -51,7 +51,7 @@ services:
       context: ./identity-link-db-clients
     image: identity-link-db-clients
     ports:
-      - 9002:80
+      - "9002:80"
     volumes:
       - ./identity-link-db-clients:/var/www
     environment:
@@ -73,7 +73,7 @@ services:
       context: ./identity-link-2fa
     image: identity-link-2fa
     ports:
-      - 9003:80
+      - "9003:80"
     volumes:
       - ./identity-link-2fa:/var/www
     environment:
@@ -150,7 +150,7 @@ services:
     container_name: identity-link-swagger-ui
     image: swaggerapi/swagger-ui
     ports:
-      - 9009:8080
+      - "9009:8080"
     volumes:
       - ./config/swagger-config.json:/usr/share/nginx/html/swagger-config.json
     environment:
@@ -168,7 +168,7 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: identity-link-database-server
     ports:
-      - 9005:8080
+      - "9005:8080"
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
@@ -181,8 +181,8 @@ services:
     logging:
       driver: 'none'  # disable saving logs
     ports:
-      - 9025:1025 # smtp server
-      - 9026:8025 # web ui
+      - "9025:1025" # smtp server
+      - "9026:8025" # web ui
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}

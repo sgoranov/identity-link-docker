@@ -2,6 +2,7 @@ identity-link-core
 identity-link-db-clients
 identity-link-db-users
 identity-link-2fa
+identity-link-bff
 shared/
 config/certificates/*.pem
 
