@@ -41,20 +41,21 @@ if docker ps -a --format '{{.Names}}' | grep -q '^identity-link-bff$'; then
 fi
 
 # Build image only if it does not exist yet to keep startup fast.
-if ! docker image inspect identity-link-bff >/dev/null 2>&1; then
-  docker build -t identity-link-bff ./identity-link-bff
+IMAGE_NAME="identity-link-bff:dev"
+if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+  docker build --target dev -t "$IMAGE_NAME" ./identity-link-bff
 fi
 
 docker run -d --name identity-link-bff \
   --privileged \
   --network identity-link-network \
-  -p 9004:80 \
-  -v ./identity-link-bff:/var/www \
+  -v ./identity-link-bff:/app \
+  -p 9004:9004 \
   -e OIDC_CLIENT_ID="$CLIENT_ID" \
   -e OIDC_CLIENT_SECRET="$CLIENT_SECRET" \
   --add-host host.docker.internal:${HOST_GW:-host-gateway} \
   --add-host auth.example.com:${HOST_GW:-host-gateway} \
-  identity-link-bff
+  $IMAGE_NAME
 
 echo
 echo "Starting oidc-test-client container with generated client credentials..."
