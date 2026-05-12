@@ -15,6 +15,7 @@ git clone https://github.com/sgoranov/identity-link-db-users.git identity-link-d
 git clone https://github.com/sgoranov/identity-link-db-clients.git identity-link-db-clients
 git clone https://github.com/sgoranov/identity-link-2fa.git identity-link-2fa
 git clone https://github.com/sgoranov/identity-link-bff.git identity-link-bff
+git clone https://github.com/sgoranov/identity-link-console.git identity-link-console
 ```
 
 These repositories should exist as local folders inside identity-link-docker, 
@@ -29,6 +30,7 @@ ln -rs ../existing/identity-link-db-users identity-link-db-users
 ln -rs ../existing/identity-link-db-clients identity-link-db-clients
 ln -rs ../existing/identity-link-2fa identity-link-2fa
 ln -rs ../existing/identity-link-2fa identity-link-bff
+ln -rs ../existing/identity-link-2fa identity-link-console
 ```
 
 Just make sure the symlinks resolve to valid folders on the host, because Docker Compose will mount 
@@ -61,6 +63,7 @@ system's hosts file:
 ```text
 127.0.0.1 protected.example.com
 127.0.0.1 auth.example.com
+127.0.0.1 ui.example.com
 ```
 
 ### Why is this necessary?
@@ -157,21 +160,6 @@ MailHog catches emails sent from your application during development.
  - Web UI: http://localhost/mail
 
 No real email is sent. All messages stay inside Docker for testing.
-
-### Redis Commander – Redis Web UI
-
-Redis Commander is a GUI for inspecting and modifying your Redis data.
-
- - Use case: Browse cache, sessions, Symfony rate limiters, etc.
- - Access: http://localhost/redis
-
-### Swagger UI – API Explorer
-
-Swagger UI lets you view and test API endpoints defined in the OpenAPI specification.
-
- - Use case: Interactively test API calls
- - Access: http://localhost/swagger
-
 
 ## Generate a JWT Token
 

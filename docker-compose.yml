@@ -88,6 +88,17 @@ services:
     networks:
       - identity-link-network
 
+  identity-link-console:
+    container_name: identity-link-console
+    privileged: true
+    build:
+      context: ./identity-link-console
+    image: identity-link-console
+    ports:
+      - "9005:9005"
+    networks:
+      - identity-link-network
+
   identity-link-proxy:
     container_name: identity-link-proxy
     image: nginx:alpine
@@ -131,36 +142,6 @@ services:
     networks:
       - identity-link-network
 
-  identity-link-redis-commander:
-    container_name: identity-link-redis-commander
-    image: rediscommander/redis-commander:latest
-    environment:
-      - REDIS_HOSTS=local:identity-link-redis:6379
-    ports:
-      - "9007:8081"
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
-    depends_on:
-      - identity-link-redis
-    networks:
-      - identity-link-network
-
-  identity-link-swagger-ui:
-    container_name: identity-link-swagger-ui
-    image: swaggerapi/swagger-ui
-    ports:
-      - "9009:8080"
-    volumes:
-      - ./config/swagger-config.json:/usr/share/nginx/html/swagger-config.json
-    environment:
-      CONFIG_URL: /swagger/swagger-config.json
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
-    networks:
-      - identity-link-network
-
   identity-link-adminer:
     container_name: identity-link-adminer
     image: adminer
@@ -168,7 +149,7 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: identity-link-database-server
     ports:
-      - "9005:8080"
+      - "9007:8080"
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
