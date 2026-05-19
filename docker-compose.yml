@@ -80,11 +80,13 @@ services:
     privileged: true
     build:
       context: ./identity-link-2fa
+      dockerfile: Dockerfile
+      target: dev
     image: identity-link-2fa
     ports:
-      - "9003:80"
+      - "9003:9003"
     volumes:
-      - ./identity-link-2fa:/var/www
+      - ./identity-link-2fa:/app
     environment:
       PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
