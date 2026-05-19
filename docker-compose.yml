@@ -30,11 +30,13 @@ services:
     privileged: true
     build:
       context: ./identity-link-db-users
+      dockerfile: Dockerfile
+      target: dev
     image: identity-link-db-users
     ports:
-      - "9001:80"
+      - "9001:9001"
     volumes:
-      - ./identity-link-db-users:/var/www
+      - ./identity-link-db-users:/app
     environment:
       PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
