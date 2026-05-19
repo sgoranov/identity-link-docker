@@ -17,7 +17,7 @@ while true; do
   if [[ "$response" =~ ^[0-9]{3}$ ]]; then   # Check if response is a 3-digit number
     if [ "$response" -eq 200 ]; then
       echo "Service is up. Generating token..." >&2
-      AUTH_TOKEN=$(docker exec "$CONTAINER_NAME" bash -c "cd /var/www && php bin/console identity-link:generate-jwt")
+      AUTH_TOKEN=$(docker exec "$CONTAINER_NAME" bash -c "cd /app && php bin/console identity-link:generate-jwt")
       echo "$AUTH_TOKEN"
       exit 0
     fi

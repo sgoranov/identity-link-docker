@@ -5,11 +5,13 @@ services:
     privileged: true
     build:
       context: ./identity-link-core
+      dockerfile: Dockerfile
+      target: dev
     image: identity-link-core
     ports:
-      - "9000:80"
+      - "9000:9000"
     volumes:
-      - ./identity-link-core:/var/www
+      - ./identity-link-core:/app
     environment:
       PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
@@ -18,7 +20,8 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - identity-link-database-server
+      identity-link-database-server:
+        condition: service_healthy
     networks:
       - identity-link-network
 
@@ -40,7 +43,8 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - identity-link-database-server
+      identity-link-database-server:
+        condition: service_healthy
     networks:
       - identity-link-network
 
@@ -62,7 +66,8 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - identity-link-database-server
+      identity-link-database-server:
+        condition: service_healthy
     networks:
       - identity-link-network
 
@@ -84,7 +89,8 @@ services:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
     depends_on:
-      - identity-link-database-server
+      identity-link-database-server:
+        condition: service_healthy
     networks:
       - identity-link-network
 
@@ -125,6 +131,11 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
       - auth.example.com:${HOST_GW:-host-gateway}
