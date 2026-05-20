@@ -46,11 +46,12 @@ Run the following commands:
 ```bash
 cd config/certificates
 mkcert --install
-mkcert "*.example.com" localhost 127.0.0.1 ::1
+mkcert example.com "*.example.com" localhost 127.0.0.1 ::1
 ```
 
  - `mkcert --install` sets up a local Certificate Authority (CA) trusted by your system.
  - The second mkcert command generates certificates for the specified domains and IPs.
+ - `*.example.com` covers subdomains (for example, `oidc-test.example.com`), while `example.com` must be included explicitly.
  - These certificates are used by the Docker services to enable HTTPS locally.
 
 Make sure you have mkcert installed on your machine before running these commands.
@@ -61,15 +62,14 @@ To properly test the system locally, you must add the following entries to your
 system's hosts file:
 
 ```text
-127.0.0.1 protected.example.com
-127.0.0.1 auth.example.com
-127.0.0.1 ui.example.com
+127.0.0.1 example.com
+127.0.0.1 oidc-test.example.com
 ```
 
 ### Why is this necessary?
 
-- **auth.example.com** represents the **Identity Link** service.
-- **protected.example.com** represents the **oidc-test-client**, which you can use to test the OpenID Connect authentication flow.
+- **example.com** represents the **Identity Link** service.
+- **oidc-test.example.com** represents the **oidc-test-client**, which you can use to test the OpenID Connect authentication flow.
 
 By mapping these domains to `127.0.0.1`, your local machine will resolve requests for these test domains to your Docker services, enabling HTTPS with the certificates you generated.
 
@@ -135,7 +135,7 @@ to connect to the database.
 | `DB_USER`                 | Database username (shared between app and services)   | `ChangeMe`                                                                           |
 | `DB_PASSWORD`             | Database password (shared between app and services)   | `ChangeMe`                                                                           |
 | `TEST_DATA_CLIENT_SECRET` | Test client secret                                    | `client`                                                                             |
-| `TEST_DATA_REDIRECT_URIS` | Redirect URIs for OAuth test client (comma-separated) | `https://protected.example.com/auth/callback,https://ui.example.com/bff/login_check` |
+| `TEST_DATA_REDIRECT_URIS` | Redirect URIs for OAuth test client (comma-separated) | `https://oidc-test.example.com/auth/callback,https://example.com/bff/login_check` |
 | `TEST_DATA_USER_NAME`     | Username for the seeded test user                     | `user`                                                                               |
 | `TEST_DATA_USER_PASS`     | Password hash for the test user (e.g., bcrypt)        | `pass`                                                                               |
 | `TEST_DATA_GROUP_NAME`    | Name of the group assigned to the test user           | `group`                                                                              |

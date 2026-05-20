@@ -2,13 +2,13 @@
 
 set -euo pipefail
 
-CLIENT_API_URL=https://auth.example.com/clients/api/v1
+CLIENT_API_URL=https://example.com/clients/api/v1
 CLIENT_SECRET=$(uuidgen)
 
 # Use existing value if set and non-empty, otherwise assign defaults
 : "${TEST_DATA_GROUP_NAME:=administrator}"
 : "${TEST_DATA_CLIENT_NAME:=test-client-$(uuidgen)}"
-: "${TEST_DATA_REDIRECT_URIS:=https://protected.example.com/auth/callback,https://ui.example.com/bff/login_check}"
+: "${TEST_DATA_REDIRECT_URIS:=https://oidc-test.example.com/auth/callback,https://example.com/bff/login_check}"
 : "${RETRY_INTERVAL:=3}"
 : "${MAX_RETRIES:=10}"
 
@@ -21,7 +21,11 @@ fi
 RETRIES=0
 echo "Waiting for $CLIENT_API_URL/ping to respond..." >&2
 while true; do
-  response=$(curl -s -o /dev/null -w "%{http_code}" "$CLIENT_API_URL/ping" || echo "000")
+  if response=$(curl -sS -o /dev/null -w "%{http_code}" "$CLIENT_API_URL/ping"); then
+    :
+  else
+    response="000"
+  fi
 
   if [[ "$response" =~ ^[0-9]{3}$ ]]; then
     if [ "$response" -eq 200 ]; then

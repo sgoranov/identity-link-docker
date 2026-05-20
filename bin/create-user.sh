@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-USER_API_URL=https://auth.example.com/users/api/v1
+USER_API_URL=https://example.com/users/api/v1
 
 # Use existing values if set, otherwise assign defaults
 : "${TEST_DATA_GROUP_NAME:=administrator}"
@@ -19,7 +19,11 @@ fi
 echo "Waiting for $USER_API_URL/ping to respond..."
 attempts=0
 while true; do
-  response=$(curl -s -o /dev/null -w "%{http_code}" "$USER_API_URL/ping" || echo "000")
+  if response=$(curl -sS -o /dev/null -w "%{http_code}" "$USER_API_URL/ping"); then
+    :
+  else
+    response="000"
+  fi
 
   if [[ "$response" =~ ^[0-9]{3}$ ]]; then
     if [ "$response" -eq 200 ]; then
@@ -101,5 +105,3 @@ echo "Username:" >&2
 echo "$TEST_DATA_USER_NAME"
 echo "Password:" >&2
 echo "$TEST_DATA_USER_PASS"
-
-

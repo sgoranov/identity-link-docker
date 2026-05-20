@@ -54,7 +54,7 @@ docker run -d --name identity-link-bff \
   -e OIDC_CLIENT_ID="$CLIENT_ID" \
   -e OIDC_CLIENT_SECRET="$CLIENT_SECRET" \
   --add-host host.docker.internal:${HOST_GW:-host-gateway} \
-  --add-host auth.example.com:${HOST_GW:-host-gateway} \
+  --add-host example.com:${HOST_GW:-host-gateway} \
   $IMAGE_NAME
 
 echo
@@ -70,10 +70,11 @@ docker run -d --name oidc-test-client \
   -p 9010:9009 \
   -e OIDC_CLIENT_ID="$CLIENT_ID" \
   -e OIDC_CLIENT_SECRET="$CLIENT_SECRET" \
-  -e OIDC_PROVIDER="https://auth.example.com" \
-  -e OIDC_ROOT_URL="https://protected.example.com" \
+  -e OIDC_PROVIDER="https://example.com" \
+  -e OIDC_ROOT_URL="https://oidc-test.example.com" \
   -e OIDC_TLS_VERIFY="false" \
   -e OIDC_DO_INTROSPECTION="false" \
   --add-host host.docker.internal:host-gateway \
-  --add-host auth.example.com:host-gateway \
+  --add-host example.com:host-gateway \
+  --add-host oidc-test.example.com:host-gateway \
   ghcr.io/beryju/oidc-test-client

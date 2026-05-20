@@ -5,7 +5,7 @@ set -euo pipefail
 : "${TEST_DATA_GROUP_NAME:=administrator}"
 : "${TEST_DATA_CLIENT_NAME:=test-client-$(uuidgen)}"
 : "${TEST_DATA_CLIENT_SECRET:=$(uuidgen)}"
-: "${TEST_DATA_REDIRECT_URI:=https://protected.example.com/auth/callback}"
+: "${TEST_DATA_REDIRECT_URI:=https://oidc-test.example.com/auth/callback}"
 : "${TEST_DATA_USER_NAME:=user-$(uuidgen)}"
 : "${TEST_DATA_USER_PASS:=pass}"
 

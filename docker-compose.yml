@@ -18,7 +18,7 @@ services:
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -43,7 +43,7 @@ services:
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -68,7 +68,7 @@ services:
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -93,7 +93,7 @@ services:
       PGPASSWORD: ${DB_PASSWORD}
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -119,12 +119,12 @@ services:
       - "443:443"
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
-      - protected.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
+      - oidc-test.example.com:${HOST_GW:-host-gateway}
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./config/certificates/_wildcard.example.com+3.pem:/etc/nginx/certs/example.com.crt:ro
-      - ./config/certificates/_wildcard.example.com+3-key.pem:/etc/nginx/certs/example.com.key:ro
+      - ./config/certificates/example.com+4.pem:/etc/nginx/certs/example.com.crt:ro
+      - ./config/certificates/example.com+4-key.pem:/etc/nginx/certs/example.com.key:ro
     networks:
       - identity-link-network
 
@@ -144,7 +144,7 @@ services:
       retries: 5
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     networks:
       - identity-link-network
 
@@ -155,7 +155,7 @@ services:
       - "9008:6379"
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     networks:
       - identity-link-network
 
@@ -169,7 +169,7 @@ services:
       - "9007:8080"
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     networks:
       - identity-link-network
 
@@ -183,7 +183,7 @@ services:
       - "9026:8025" # web ui
     extra_hosts:
       - host.docker.internal:${HOST_GW:-host-gateway}
-      - auth.example.com:${HOST_GW:-host-gateway}
+      - example.com:${HOST_GW:-host-gateway}
     networks:
       - identity-link-network
 

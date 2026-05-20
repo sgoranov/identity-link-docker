@@ -6,13 +6,17 @@ RETRY_INTERVAL=3
 MAX_RETRIES=30
 RETRIES=0
 
-URL=https://auth.example.com/.well-known/openid-configuration
+URL=https://example.com/.well-known/openid-configuration
 CONTAINER_NAME="identity-link-core"
 
 echo "Waiting for $URL to respond..." >&2
 
 while true; do
-  response=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+  if response=$(curl -sS -o /dev/null -w "%{http_code}" "$URL"); then
+    :
+  else
+    response="000"
+  fi
 
   if [[ "$response" =~ ^[0-9]{3}$ ]]; then   # Check if response is a 3-digit number
     if [ "$response" -eq 200 ]; then

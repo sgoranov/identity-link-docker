@@ -1,8 +1,8 @@
 {
   "urls": [
-    { "url": "https://auth.example.com/users/api/v1/openapi.yaml", "name": "DB Users" },
-    { "url": "https://auth.example.com/clients/api/v1/openapi.yaml", "name": "DB Clients" },
-    { "url": "https://auth.example.com/2fa/api/v1/openapi.yaml", "name": "Tow-factor authentication" }
+    { "url": "https://example.com/users/api/v1/openapi.yaml", "name": "DB Users" },
+    { "url": "https://example.com/clients/api/v1/openapi.yaml", "name": "DB Clients" },
+    { "url": "https://example.com/2fa/api/v1/openapi.yaml", "name": "Tow-factor authentication" }
   ],
   "validatorUrl": null
 }
