@@ -1,12 +1,7 @@
-identity-link-core
-identity-link-db-clients
-identity-link-db-users
-identity-link-2fa
-identity-link-bff
-identity-link-console
+src/
 shared/
-config/certificates/*.pem
-
+config/certificates/
+config/generated-data.env
 .idea
 .env.local
-
+.dns_current_connection

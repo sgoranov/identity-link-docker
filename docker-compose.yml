@@ -4,24 +4,22 @@ services:
     container_name: identity-link-core
     privileged: true
     build:
-      context: ./identity-link-core
-      dockerfile: Dockerfile
+      context: ./src/identity-link-core
       target: dev
     image: identity-link-core
     ports:
       - "9000:9000"
     volumes:
-      - ./identity-link-core:/app
+      - ./src/identity-link-core:/app
     environment:
       PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -29,24 +27,22 @@ services:
     container_name: identity-link-db-users
     privileged: true
     build:
-      context: ./identity-link-db-users
-      dockerfile: Dockerfile
+      context: ./src/identity-link-db-users
       target: dev
     image: identity-link-db-users
     ports:
       - "9001:9001"
     volumes:
-      - ./identity-link-db-users:/app
+      - ./src/identity-link-db-users:/app
     environment:
       PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -54,24 +50,22 @@ services:
     container_name: identity-link-db-clients
     privileged: true
     build:
-      context: ./identity-link-db-clients
-      dockerfile: Dockerfile
+      context: ./src/identity-link-db-clients
       target: dev
     image: identity-link-db-clients
     ports:
       - "9002:9002"
     volumes:
-      - ./identity-link-db-clients:/app
+      - ./src/identity-link-db-clients:/app
     environment:
       PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -79,24 +73,40 @@ services:
     container_name: identity-link-2fa
     privileged: true
     build:
-      context: ./identity-link-2fa
-      dockerfile: Dockerfile
+      context: ./src/identity-link-2fa
       target: dev
     image: identity-link-2fa
     ports:
       - "9003:9003"
     volumes:
-      - ./identity-link-2fa:/app
+      - ./src/identity-link-2fa:/app
     environment:
       PGHOST: identity-link-database-server
       PGUSER: ${DB_USER}
       PGPASSWORD: ${DB_PASSWORD}
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
+    dns:
+      - 172.28.0.53
+    networks:
+      - identity-link-network
+
+  identity-link-bff:
+    container_name: identity-link-bff
+    privileged: true
+    build:
+      context: ./src/identity-link-bff
+      target: dev
+    image: identity-link-bff:dev
+    ports:
+      - "9004:9004"
+    volumes:
+      - ./src/identity-link-bff:/app
+    env_file:
+      - config/generated-data.env
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -104,10 +114,12 @@ services:
     container_name: identity-link-console
     privileged: true
     build:
-      context: ./identity-link-console
+      context: ./src/identity-link-console
     image: identity-link-console
     ports:
       - "9005:9005"
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -117,14 +129,14 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
-      - oidc-test.example.com:${HOST_GW:-host-gateway}
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./config/certificates/example.com+4.pem:/etc/nginx/certs/example.com.crt:ro
-      - ./config/certificates/example.com+4-key.pem:/etc/nginx/certs/example.com.key:ro
+      - ./config/certificates/local-dev.crt:/etc/nginx/certs/example.com.crt:ro
+      - ./config/certificates/local-dev.key:/etc/nginx/certs/example.com.key:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -142,9 +154,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -153,11 +164,23 @@ services:
     image: redis:alpine
     ports:
       - "9008:6379"
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
+
+  identity-link-dnsmasq:
+    container_name: identity-link-dnsmasq
+    image: 4km3/dnsmasq:2.90-r3-alpine-latest
+    ports:
+      - "53:53/udp"
+    volumes:
+      - ./config/dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf:ro
+    cap_add:
+      - NET_ADMIN
+    networks:
+      identity-link-network:
+        ipv4_address: 172.28.0.53
 
   identity-link-adminer:
     container_name: identity-link-adminer
@@ -167,9 +190,8 @@ services:
       ADMINER_DEFAULT_SERVER: identity-link-database-server
     ports:
       - "9007:8080"
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -177,13 +199,31 @@ services:
     container_name: identity-link-smtp-server
     image: mailhog/mailhog
     logging:
-      driver: 'none'  # disable saving logs
+      driver: 'none'
     ports:
-      - "9025:1025" # smtp server
-      - "9026:8025" # web ui
-    extra_hosts:
-      - host.docker.internal:${HOST_GW:-host-gateway}
-      - example.com:${HOST_GW:-host-gateway}
+      - "9025:1025"
+      - "9026:8025"
+    dns:
+      - 172.28.0.53
+    networks:
+      - identity-link-network
+
+  oidc-test-client:
+    container_name: oidc-test-client
+    image: ghcr.io/beryju/oidc-test-client
+    ports:
+      - "9010:9009"
+    env_file:
+      - config/generated-data.env
+    environment:
+      - OIDC_PROVIDER=https://example.com
+      - OIDC_ROOT_URL=https://oidc-test.example.com
+      - OIDC_TLS_VERIFY=false
+      - OIDC_DO_INTROSPECTION=false
+    healthcheck:
+      test: [ "NONE" ]
+    dns:
+      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -191,3 +231,6 @@ networks:
   identity-link-network:
     name: identity-link-network
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

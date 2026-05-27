@@ -1,15 +1,17 @@
 # Run Identity Link with Docker
 
-This repository provides a simple way to run the entire Identity Link microservice 
-architecture using Docker and Docker Compose. With just one command, you can 
-spin up all necessary services in a consistent and reproducible environment.
+This repository provides a streamlined way to run the entire Identity Link microservice
+architecture using Docker and Docker Compose. With the power of `make` and an integrated local 
+split-horizon DNS server, you can spin up all necessary services in a consistent, secure, and reproducible 
+environment with zero manual host configuration.
 
 ## Getting Started
 
 Before starting the services, make sure all required service repositories are 
-cloned into this directory:
+cloned into src/ directory:
 
 ```bash
+cd src
 git clone https://github.com/sgoranov/identity-link.git identity-link-core
 git clone https://github.com/sgoranov/identity-link-db-users.git identity-link-db-users
 git clone https://github.com/sgoranov/identity-link-db-clients.git identity-link-db-clients
@@ -25,59 +27,22 @@ If you already have these repositories checked out elsewhere, you can create
 relative symbolic links instead of cloning again:
 
 ```bash
-ln -rs ../existing/identity-link identity-link-core
-ln -rs ../existing/identity-link-db-users identity-link-db-users
-ln -rs ../existing/identity-link-db-clients identity-link-db-clients
-ln -rs ../existing/identity-link-2fa identity-link-2fa
-ln -rs ../existing/identity-link-2fa identity-link-bff
-ln -rs ../existing/identity-link-2fa identity-link-console
+cd src
+ln -s /path_to/identity-link identity-link-core
+ln -s /path_to/identity-link-db-users identity-link-db-users
+ln -s /path_to/identity-link-db-clients identity-link-db-clients
+ln -s /path_to/identity-link-2fa identity-link-2fa
+ln -s /path_to/identity-link-bff identity-link-bff
+ln -s /path_to/identity-link-console identity-link-console
 ```
 
-Just make sure the symlinks resolve to valid folders on the host, because Docker Compose will mount 
+Make sure the symlinks resolve to valid folders on the host, because Docker Compose will mount 
 whatever they point to into the containers.
-
-## Setup TLS Certificates 
-
-Before starting the Docker services, you need to generate and install the required TLS certificates using 
-mkcert. This step ensures secure HTTPS communication for your local environment.
-
-Run the following commands:
-
-```bash
-cd config/certificates
-mkcert --install
-mkcert example.com "*.example.com" localhost 127.0.0.1 ::1
-```
-
- - `mkcert --install` sets up a local Certificate Authority (CA) trusted by your system.
- - The second mkcert command generates certificates for the specified domains and IPs.
- - `*.example.com` covers subdomains (for example, `oidc-test.example.com`), while `example.com` must be included explicitly.
- - These certificates are used by the Docker services to enable HTTPS locally.
-
-Make sure you have mkcert installed on your machine before running these commands.
-
-## Update Your Hosts File
-
-To properly test the system locally, you must add the following entries to your 
-system's hosts file:
-
-```text
-127.0.0.1 example.com
-127.0.0.1 oidc-test.example.com
-```
-
-### Why is this necessary?
-
-- **example.com** represents the **Identity Link** service.
-- **oidc-test.example.com** represents the **oidc-test-client**, which you can use to test the OpenID Connect authentication flow.
-
-By mapping these domains to `127.0.0.1`, your local machine will resolve requests for these test domains to your Docker services, enabling HTTPS with the certificates you generated.
-
 
 ## Start/Stop the Services
 
 ```bash
-./start.sh
+make dev-up
 ```
 
 This will:
@@ -85,17 +50,11 @@ This will:
  - Load environment variables from .env and .env.local (if present)
  - Launch all required containers in detached mode using Docker Compose
 
-
 ```bash
-./stop.sh
+make dev-down
 ```
 
 This stops all running containers.
-
-### Useful Tips
-
- - Use _docker compose logs -f_ to monitor service logs
- - Use _docker compose ps_ to list running containers
 
 ## Customizing Environment Configuration
 
@@ -112,13 +71,11 @@ Then add only the variables you want to override:
 DB_PASSWORD=mysecret
 ```
 
-The .env.local file is automatically loaded when running start.sh or stop.sh.
-
-.env.local is typically included in .gitignore to keep secrets out of version control.
+.env.local is included in .gitignore to keep secrets out of version control.
 
 ## Environment Variables for Docker
 
-Important: The Docker environment uses a dedicated environment file (e.g. .env, .env.local) that is 
+Important: The Docker environment uses a dedicated environment file (e.g., .env, .env.local) that is 
 separate from the application’s Symfony .env file.
 
 The Docker .env is used only by Docker Compose and defines the 
@@ -128,50 +85,34 @@ setup parameters needed to build and run the containers.
 your Symfony application’s .env configuration, or the application will fail 
 to connect to the database.
 
-### List of Environment Variables
-
-| Variable                  | Description                                           | Example Value                                                                        |
-|---------------------------|-------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `DB_USER`                 | Database username (shared between app and services)   | `ChangeMe`                                                                           |
-| `DB_PASSWORD`             | Database password (shared between app and services)   | `ChangeMe`                                                                           |
-| `TEST_DATA_CLIENT_SECRET` | Test client secret                                    | `client`                                                                             |
-| `TEST_DATA_REDIRECT_URIS` | Redirect URIs for OAuth test client (comma-separated) | `https://oidc-test.example.com/auth/callback,https://example.com/bff/login_check` |
-| `TEST_DATA_USER_NAME`     | Username for the seeded test user                     | `user`                                                                               |
-| `TEST_DATA_USER_PASS`     | Password hash for the test user (e.g., bcrypt)        | `pass`                                                                               |
-| `TEST_DATA_GROUP_NAME`    | Name of the group assigned to the test user           | `group`                                                                              |
-
 ## Additional Docker Services
 
 Your Docker setup includes several tools to assist with development and debugging.
 
 ### Adminer – Database UI
-
-Adminer is a single-file UI for managing your PostgreSQL database.
-
- - Use case: Inspect tables, run SQL queries, debug data
- - Access: http://localhost/db
+Adminer is a lightweight UI for managing your PostgreSQL database.
+- **Use case:** Inspect tables, run SQL queries, debug data.
+- **Access:** [http://localhost/db/](http://localhost/db/)
 
 ### MailHog – SMTP Test Server
-
 MailHog catches emails sent from your application during development.
-
- - Use case: Test registration flows, password reset, etc.
- - SMTP port: localhost:9025
- - Web UI: http://localhost/mail
+- **Use case:** Test registration flows, password reset, etc.
+- **SMTP port:** `localhost:9025`
+- **Web UI:** [http://localhost/mail/](http://localhost/mail/)
 
 No real email is sent. All messages stay inside Docker for testing.
 
 ## Generate a JWT Token
 
-You’ll need a valid JWT token to use protected endpoints in Swagger.
-
-Generate one using:
+You’ll need a valid JWT token to use protected endpoints in Swagger or Postman. You can generate one instantly 
+using the provided helper script, which automatically waits for the core service to become fully available
+before issuing the token:
 
 ```bash
-docker exec -it core bash -c "cd /var/www; php bin/console identity-link:generate-jwt"
+./bin/generate-auth-token.sh
 ```
 
-The output token can then be pasted into the Authorize dialog in Swagger UI.
+The output token can then be copied and pasted directly into the Authorize dialog in Swagger UI.
 
 ## License
 

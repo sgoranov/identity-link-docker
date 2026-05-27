@@ -41,15 +41,9 @@ readarray -t user_output < <($SCRIPT_DIR/create-user.sh)
 USER_NAME="${user_output[-2]}"
 USER_PASS="${user_output[-1]}"
 
-echo >&2
-echo "All done:" >&2
-jq -n --arg clientId "$CLIENT_ID" \
-      --arg clientSecret "$CLIENT_SECRET" \
-      --arg username "$USER_NAME" \
-      --arg userPass "$USER_PASS" \
-      '{
-        "client_id": $clientId,
-        "client_secret": $clientSecret,
-        "username": $username,
-        "user_password": $userPass
-      }'
+echo "All done. Writing variables to stdout..." >&2
+
+echo "OIDC_CLIENT_ID=${CLIENT_ID}"
+echo "OIDC_CLIENT_SECRET=${CLIENT_SECRET}"
+echo "GENERATED_USERNAME=${USER_NAME}"
+echo "GENERATED_PASSWORD=${USER_PASS}"
