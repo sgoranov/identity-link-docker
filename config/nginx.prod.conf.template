@@ -1,0 +1,103 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    server {
+        listen 80;
+        server_name ${DOMAIN_NAME};
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    server {
+        listen 443 ssl;
+        server_name ${DOMAIN_NAME};
+
+        ssl_certificate /run/secrets/server_crt;
+        ssl_certificate_key /run/secrets/server_key;
+
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+        location / {
+            set $core http://identity-link-core:9000;
+            proxy_pass $core;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+        }
+
+        location /users/ {
+            set $users http://identity-link-db-users:9001;
+            rewrite ^/users(/.*)$ $1 break;
+            proxy_pass $users;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Prefix /users;
+        }
+
+        location /clients/ {
+            set $clients http://identity-link-db-clients:9002;
+            rewrite ^/clients(/.*)$ $1 break;
+            proxy_pass $clients;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Prefix /clients;
+        }
+
+        location /2fa/ {
+            set $twofa http://identity-link-2fa:9003;
+            rewrite ^/2fa(/.*)$ $1 break;
+            proxy_pass $twofa;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Prefix /2fa;
+        }
+
+        location = /admin-console {
+            return 301 /admin-console/;
+        }
+
+        location /admin-console/ {
+            set $console http://identity-link-console:9005;
+            proxy_pass $console;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+
+        location /bff/ {
+            set $bff http://identity-link-bff:9004;
+            rewrite ^/bff(/.*)$ $1 break;
+            proxy_pass $bff;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Prefix /bff;
+        }
+    }
+}

@@ -2,124 +2,96 @@ services:
 
   identity-link-core:
     container_name: identity-link-core
-    privileged: true
-    build:
-      context: ./src/identity-link-core
-      target: dev
-    image: identity-link-core
-    ports:
-      - "9000:9000"
-    volumes:
-      - ./src/identity-link-core:/app
+    image: ghcr.io/sgoranov/identity-link-core:${VERSION:-latest}
     environment:
-      PGHOST: identity-link-database-server
-      PGUSER: ${DB_USER}
-      PGPASSWORD: ${DB_PASSWORD}
+      CONSENT_SCREEN_ENABLED: true
+      LOGIN_TWO_FA_ENABLED: true
+      TWO_FA_INDEX_ENDPOINT: https://${DOMAIN_NAME}/2fa/2fa/verify/{id}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
-    dns:
-      - 172.28.0.53
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/api/v1/ping" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - identity-link-network
 
   identity-link-db-users:
     container_name: identity-link-db-users
-    privileged: true
-    build:
-      context: ./src/identity-link-db-users
-      target: dev
-    image: identity-link-db-users
-    ports:
-      - "9001:9001"
-    volumes:
-      - ./src/identity-link-db-users:/app
+    image: ghcr.io/sgoranov/identity-link-db-users:${VERSION:-latest}
     environment:
-      PGHOST: identity-link-database-server
-      PGUSER: ${DB_USER}
-      PGPASSWORD: ${DB_PASSWORD}
+      RESET_PASSWORD_REDIRECT_URL: https://${DOMAIN_NAME}/login/password/{id}
+      FEATURE_RESET_PASSWORD_ENABLED: false
+      FEATURE_PASSWORD_VALIDATION_ENABLED: true
     depends_on:
       identity-link-database-server:
         condition: service_healthy
-    dns:
-      - 172.28.0.53
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9001/api/v1/ping" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - identity-link-network
 
   identity-link-db-clients:
     container_name: identity-link-db-clients
-    privileged: true
-    build:
-      context: ./src/identity-link-db-clients
-      target: dev
-    image: identity-link-db-clients
-    ports:
-      - "9002:9002"
-    volumes:
-      - ./src/identity-link-db-clients:/app
-    environment:
-      PGHOST: identity-link-database-server
-      PGUSER: ${DB_USER}
-      PGPASSWORD: ${DB_PASSWORD}
+    image: ghcr.io/sgoranov/identity-link-db-clients:${VERSION:-latest}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
-    dns:
-      - 172.28.0.53
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9002/api/v1/ping" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - identity-link-network
 
   identity-link-2fa:
     container_name: identity-link-2fa
-    privileged: true
-    build:
-      context: ./src/identity-link-2fa
-      target: dev
-    image: identity-link-2fa
-    ports:
-      - "9003:9003"
-    volumes:
-      - ./src/identity-link-2fa:/app
+    image: ghcr.io/sgoranov/identity-link-2fa:${VERSION:-latest}
     environment:
-      PGHOST: identity-link-database-server
-      PGUSER: ${DB_USER}
-      PGPASSWORD: ${DB_PASSWORD}
+      TWO_FA_REDIRECT_URI: https://${DOMAIN_NAME}/login/2fa
     depends_on:
       identity-link-database-server:
         condition: service_healthy
-    dns:
-      - 172.28.0.53
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9003/api/v1/ping" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - identity-link-network
 
   identity-link-bff:
     container_name: identity-link-bff
-    privileged: true
-    build:
-      context: ./src/identity-link-bff
-      target: dev
-    image: identity-link-bff:dev
-    ports:
-      - "9004:9004"
-    volumes:
-      - ./src/identity-link-bff:/app
-    env_file:
-      - config/generated-data.env
-    dns:
-      - 172.28.0.53
+    image: ghcr.io/sgoranov/identity-link-bff:${VERSION:-latest}
+    environment:
+      OIDC_WELL_KNOWN_URL: https://${DOMAIN_NAME}/.well-known/openid-configuration
+      POST_LOGIN_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console
+      POST_LOGOUT_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console/logout-success
+      PROXY_SERVICE_BASE_URLS: "{\"users\":\"https://${DOMAIN_NAME}/users\",\"clients\":\"https://${DOMAIN_NAME}/clients\"}"
     networks:
       - identity-link-network
 
   identity-link-console:
     container_name: identity-link-console
-    privileged: true
-    build:
-      context: ./src/identity-link-console
-    image: identity-link-console
-    ports:
-      - "9005:9005"
-    dns:
-      - 172.28.0.53
+    image: ghcr.io/sgoranov/identity-link-console:${VERSION:-latest}
+    environment:
+      VITE_MAX_USER_GROUPS: 20
+      VITE_MAX_CLIENT_GROUPS: 20
+      VITE_ADMINISTRATOR_GROUP: administrator
+      VITE_DEFAULT_PAGE_SIZE: 10
+      VITE_BFF_BASE_URL: https://${DOMAIN_NAME}/bff
+    depends_on:
+      - identity-link-bff
     networks:
       - identity-link-network
 
@@ -129,14 +101,19 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./config/certificates/local-dev.crt:/etc/nginx/certs/example.com.crt:ro
-      - ./config/certificates/local-dev.key:/etc/nginx/certs/example.com.key:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    dns:
-      - 172.28.0.53
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eux
+
+        envsubst '$$DOMAIN_NAME' \
+        < /etc/nginx/nginx.conf.template \
+        > /tmp/nginx.conf
+
+        exec nginx -c /tmp/nginx.conf -g 'daemon off;'
     networks:
       - identity-link-network
 
@@ -144,86 +121,14 @@ services:
     container_name: identity-link-database-server
     image: postgres:15
     restart: always
-    ports:
-      - "9006:5432"
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    dns:
-      - 172.28.0.53
+    volumes:
+      - ./config/postgres:/docker-entrypoint-initdb.d:ro
     networks:
       - identity-link-network
 
   identity-link-redis:
     container_name: identity-link-redis
     image: redis:alpine
-    ports:
-      - "9008:6379"
-    dns:
-      - 172.28.0.53
-    networks:
-      - identity-link-network
-
-  identity-link-dnsmasq:
-    container_name: identity-link-dnsmasq
-    image: 4km3/dnsmasq:2.90-r3-alpine-latest
-    ports:
-      - "53:53/udp"
-    volumes:
-      - ./config/dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf:ro
-    cap_add:
-      - NET_ADMIN
-    networks:
-      identity-link-network:
-        ipv4_address: 172.28.0.53
-
-  identity-link-adminer:
-    container_name: identity-link-adminer
-    image: adminer
-    restart: always
-    environment:
-      ADMINER_DEFAULT_SERVER: identity-link-database-server
-    ports:
-      - "9007:8080"
-    dns:
-      - 172.28.0.53
-    networks:
-      - identity-link-network
-
-  identity-link-smtp-server:
-    container_name: identity-link-smtp-server
-    image: mailhog/mailhog
-    logging:
-      driver: 'none'
-    ports:
-      - "9025:1025"
-      - "9026:8025"
-    dns:
-      - 172.28.0.53
-    networks:
-      - identity-link-network
-
-  oidc-test-client:
-    container_name: oidc-test-client
-    image: ghcr.io/beryju/oidc-test-client
-    ports:
-      - "9010:9009"
-    env_file:
-      - config/generated-data.env
-    environment:
-      - OIDC_PROVIDER=https://example.com
-      - OIDC_ROOT_URL=https://oidc-test.example.com
-      - OIDC_TLS_VERIFY=false
-      - OIDC_DO_INTROSPECTION=false
-    healthcheck:
-      test: [ "NONE" ]
-    dns:
-      - 172.28.0.53
     networks:
       - identity-link-network
 
@@ -231,6 +136,3 @@ networks:
   identity-link-network:
     name: identity-link-network
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16

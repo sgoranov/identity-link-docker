@@ -1,120 +1,186 @@
 # Run Identity Link with Docker
 
-This repository provides a streamlined way to run the entire Identity Link microservice
-architecture using Docker and Docker Compose. With the power of `make` and an integrated local 
-split-horizon DNS server, you can spin up all necessary services in a consistent, secure, and reproducible 
-environment with zero manual host configuration.
+This repository provides a streamlined way to run the complete **Identity Link** microservice architecture 
+using **Docker** and **Docker Compose**.
+The following guide explains how to configure, initialize, start, and manage an Identity Link deployment.
 
-## Getting Started
+## Prerequisites
 
-Before starting the services, make sure all required service repositories are 
-cloned into src/ directory:
+Before starting, make sure you have:
 
-```bash
-cd src
-git clone https://github.com/sgoranov/identity-link.git identity-link-core
-git clone https://github.com/sgoranov/identity-link-db-users.git identity-link-db-users
-git clone https://github.com/sgoranov/identity-link-db-clients.git identity-link-db-clients
-git clone https://github.com/sgoranov/identity-link-2fa.git identity-link-2fa
-git clone https://github.com/sgoranov/identity-link-bff.git identity-link-bff
-git clone https://github.com/sgoranov/identity-link-console.git identity-link-console
-```
+- Docker installed
+- Docker Compose installed
+- A valid domain name pointing to your server
+- Ports `80` and `443` available for HTTPS certificate generation
 
-These repositories should exist as local folders inside identity-link-docker, 
-matching the directory structure expected by Docker Compose.
 
-If you already have these repositories checked out elsewhere, you can create 
-relative symbolic links instead of cloning again:
+## Configure environment variables
+
+Docker Compose uses the `.env` file to load the configuration required by the applications.
+Start by copying the example configuration:
 
 ```bash
-cd src
-ln -s /path_to/identity-link identity-link-core
-ln -s /path_to/identity-link-db-users identity-link-db-users
-ln -s /path_to/identity-link-db-clients identity-link-db-clients
-ln -s /path_to/identity-link-2fa identity-link-2fa
-ln -s /path_to/identity-link-bff identity-link-bff
-ln -s /path_to/identity-link-console identity-link-console
+cp .env.example.prod .env
 ```
 
-Make sure the symlinks resolve to valid folders on the host, because Docker Compose will mount 
-whatever they point to into the containers.
+Update the .env file according to your environment and deployment requirements.
 
-## Start/Stop the Services
+## Generate HTTPS certificates
+
+Identity Link runs by default over HTTPS, so you need to generate a TLS certificate and private key before starting the services.
+
+You can generate certificates using Certbot.
+
+### Generate a certificate
+
+Replace your-domain.com and admin@your-domain.com with your actual domain and email address:
 
 ```bash
-make dev-up
+docker run --rm -it \
+  -p 80:80 \
+  -v "$PWD/letsencrypt:/etc/letsencrypt" \
+  certbot/certbot certonly \
+  --standalone \
+  -d your-domain.com \
+  --email admin@your-domain.com \
+  --agree-tos \
+  --no-eff-email
 ```
 
-This will:
+### Renew certificates
 
- - Load environment variables from .env and .env.local (if present)
- - Launch all required containers in detached mode using Docker Compose
+Certificates can be renewed using the same Certbot Docker image:
 
 ```bash
-make dev-down
+docker run --rm \
+  -p 80:80 \
+  -v "$PWD/letsencrypt:/etc/letsencrypt" \
+  certbot/certbot renew
 ```
 
-This stops all running containers.
+### Configure certificate paths
 
-## Customizing Environment Configuration
-
-By default, environment variables are defined in the .env file. To override any of them locally, 
-create a _.env.local_ file:
+After the certificates are generated, create symbolic links so Identity Link can access them:
 
 ```bash
-touch .env.local
+ln -s "$PWD/config/letsencrypt/live/your-domain.com/privkey.pem" \
+      config/certificates/server.key
+
+ln -s "$PWD/config/letsencrypt/live/your-domain.com/fullchain.pem" \
+      config/certificates/server.crt
 ```
 
-Then add only the variables you want to override:
+## Generate application secrets
 
-```dotenv
-DB_PASSWORD=mysecret
-```
+Before starting the services, generate all required secrets, passwords, and cryptographic keys.
+Identity Link stores secrets as files under `config/secrets`. Each secret is stored in a separate file.
 
-.env.local is included in .gitignore to keep secrets out of version control.
-
-## Environment Variables for Docker
-
-Important: The Docker environment uses a dedicated environment file (e.g., .env, .env.local) that is 
-separate from the application’s Symfony .env file.
-
-The Docker .env is used only by Docker Compose and defines the 
-setup parameters needed to build and run the containers.
-
-**Note:** DB_USER and DB_PASSWORD must match between Docker’s environment and 
-your Symfony application’s .env configuration, or the application will fail 
-to connect to the database.
-
-## Additional Docker Services
-
-Your Docker setup includes several tools to assist with development and debugging.
-
-### Adminer – Database UI
-Adminer is a lightweight UI for managing your PostgreSQL database.
-- **Use case:** Inspect tables, run SQL queries, debug data.
-- **Access:** [http://localhost/db/](http://localhost/db/)
-
-### MailHog – SMTP Test Server
-MailHog catches emails sent from your application during development.
-- **Use case:** Test registration flows, password reset, etc.
-- **SMTP port:** `localhost:9025`
-- **Web UI:** [http://localhost/mail/](http://localhost/mail/)
-
-No real email is sent. All messages stay inside Docker for testing.
-
-## Generate a JWT Token
-
-You’ll need a valid JWT token to use protected endpoints in Swagger or Postman. You can generate one instantly 
-using the provided helper script, which automatically waits for the core service to become fully available
-before issuing the token:
+Generate the required JWT keys, encryption keys, and application secrets:
 
 ```bash
-./bin/generate-auth-token.sh
+/bin/bash bin/bootstrap-secrets.sh
 ```
 
-The output token can then be copied and pasted directly into the Authorize dialog in Swagger UI.
+## Start Identity Link services
 
-## License
+Start all services using Docker Compose:
 
-Identity Link is open source software licensed under the [MIT License](LICENSE), which permits reuse,
-modification, and distribution with minimal restrictions.
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  up -d
+```
+
+Docker Compose will start all required Identity Link services in the background.
+
+You can check the service status with:
+
+```bash
+docker compose ps
+```
+
+## Provision the initial tenant
+
+Once all services are running, create the initial tenant, client, and administrative user for the Identity Link console:
+
+```bash
+/bin/bash bin/provision-tenant.sh your-domain.com
+```
+
+Replace your-domain.com with your configured domain.
+
+## Access the Identity Link console
+
+Open your browser and navigate to: https://your-domain.com/admin-console.
+The default administrator credentials are:
+
+```txt
+username: admin
+password: 7MkhqneerPNSsiws
+```
+
+**Important**: Change the administrator password immediately after the first login. Leaving the default 
+password unchanged can allow unauthorized access to your Identity Link installation.
+
+## Stop Identity Link services
+
+To stop and remove all running services:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  down
+```
+
+## Integrate Applications with Identity Link
+
+Once Identity Link is running, you can use the administration console to manage:
+
+* Users
+* Clients
+* Authentication settings
+
+The OpenID Connect discovery endpoint is available at: https://your-domain.com/.well-known/openid-configuration.
+Use this endpoint to configure your applications and integrate them with Identity Link.
+
+## Troubleshooting
+
+### Check service logs
+
+To inspect logs for all services:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  logs -f
+```
+
+### Restart services
+
+To restart the deployment:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  restart
+```
+
+### Pull updates
+
+To download the latest Identity Link images from the configured container registry:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  pull
+```
+
+## Further reading
+
+For more information about configuring Identity Link for development and using Docker 
+in a development environment, see: [DEVELOPMENT.md](docs/DEVELOPMENT.md)

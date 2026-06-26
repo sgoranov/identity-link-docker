@@ -1,7 +1,8 @@
 src/
-shared/
+runtime/
+config/keys/
 config/certificates/
-config/generated-data.env
+config/secrets/
+config/letsencrypt/
 .idea
-.env.local
-.dns_current_connection
+.env

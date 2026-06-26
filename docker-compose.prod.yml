@@ -1,0 +1,114 @@
+services:
+
+  identity-link-core:
+    secrets:
+      - source: core_jwt_private_key
+        target: jwt_private_key
+      - source: core_jwt_public_key
+        target: jwt_public_key
+      - source: core_encryption_key
+        target: encryption_key
+      - source: core_app_secret
+        target: app_secret
+      - source: database_user
+        target: db_user
+      - source: database_password
+        target: db_password
+
+  identity-link-db-users:
+    secrets:
+      - source: db_users_app_secret
+        target: app_secret
+      - source: database_user
+        target: db_user
+      - source: database_password
+        target: db_password
+
+  identity-link-db-clients:
+    secrets:
+      - source: db_clients_app_secret
+        target: app_secret
+      - source: database_user
+        target: db_user
+      - source: database_password
+        target: db_password
+
+  identity-link-2fa:
+    secrets:
+      - source: 2fa_app_secret
+        target: app_secret
+      - source: database_user
+        target: db_user
+      - source: database_password
+        target: db_password
+
+  identity-link-bff:
+    secrets:
+      - source: bff_app_secret
+        target: app_secret
+      - source: bff_client_id
+        target: client_id
+      - source: bff_client_secret
+        target: client_secret
+    extra_hosts:
+      - "${DOMAIN_NAME}:host-gateway"
+
+  identity-link-proxy:
+    secrets:
+      - source: proxy_server_crt
+        target: server_crt
+      - source: proxy_server_key
+        target: server_key
+    volumes:
+      - ./config/nginx.prod.conf.template:/etc/nginx/nginx.conf.template:ro
+
+  identity-link-database-server:
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    secrets:
+      - source: database_user
+        target: db_user
+      - source: database_password
+        target: db_password
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/db_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$(cat /run/secrets/db_user)" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+secrets:
+  proxy_server_crt:
+    file: ./config/certificates/server.crt
+  proxy_server_key:
+    file: ./config/certificates/server.key
+  database_user:
+    file: ./config/secrets/database_user
+  database_password:
+    file: ./config/secrets/database_password
+  core_jwt_private_key:
+    file: ./config/keys/core_jwt_private_key
+  core_jwt_public_key:
+    file: ./config/keys/core_jwt_public_key
+  core_encryption_key:
+    file: ./config/keys/core_encryption_key
+  core_app_secret:
+    file: ./config/secrets/core_app_secret
+  db_users_app_secret:
+    file: ./config/secrets/db_users_app_secret
+  db_clients_app_secret:
+    file: ./config/secrets/db_clients_app_secret
+  2fa_app_secret:
+    file: ./config/secrets/2fa_app_secret
+  bff_app_secret:
+    file: ./config/secrets/bff_app_secret
+  bff_client_id:
+    file: ./config/secrets/bff_client_id
+  bff_client_secret:
+    file: ./config/secrets/bff_client_secret
