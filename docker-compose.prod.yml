@@ -16,6 +16,8 @@ services:
         target: db_password
 
   identity-link-db-users:
+    environment:
+      FEATURE_RESET_PASSWORD_ENABLED: false
     secrets:
       - source: db_users_app_secret
         target: app_secret

@@ -7,7 +7,7 @@ services:
       CONSENT_SCREEN_ENABLED: true
       LOGIN_TWO_FA_ENABLED: true
       TWO_FA_INDEX_ENDPOINT: https://${DOMAIN_NAME}/2fa/2fa/verify/{id}
-      RESET_PASSWORD_URL: ''
+      RESET_PASSWORD_URL: https://${DOMAIN_NAME}/users/reset-password/{id}
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -25,7 +25,7 @@ services:
     image: ghcr.io/sgoranov/identity-link-db-users:${VERSION:-latest}
     environment:
       RESET_PASSWORD_REDIRECT_URL: https://${DOMAIN_NAME}/login/password/{id}
-      FEATURE_RESET_PASSWORD_ENABLED: false
+      FEATURE_RESET_PASSWORD_ENABLED: true
       FEATURE_PASSWORD_VALIDATION_ENABLED: true
     depends_on:
       identity-link-database-server:

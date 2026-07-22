@@ -117,6 +117,8 @@ services:
     image: mailhog/mailhog
     logging:
       driver: 'none'
+    ports:
+      - "8025:8025"
     networks:
       - identity-link-network
 
