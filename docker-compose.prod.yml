@@ -1,6 +1,8 @@
 services:
 
   identity-link-core:
+    environment:
+      RESET_PASSWORD_URL: ''
     secrets:
       - source: core_jwt_private_key
         target: jwt_private_key
