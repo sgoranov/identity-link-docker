@@ -7,6 +7,7 @@ services:
       CONSENT_SCREEN_ENABLED: true
       LOGIN_TWO_FA_ENABLED: true
       TWO_FA_INDEX_ENDPOINT: https://${DOMAIN_NAME}/2fa/2fa/verify/{id}
+      RESET_PASSWORD_URL: ''
     depends_on:
       identity-link-database-server:
         condition: service_healthy
