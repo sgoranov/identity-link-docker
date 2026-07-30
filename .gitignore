@@ -4,5 +4,6 @@ config/keys/
 config/certificates/
 config/secrets/
 config/letsencrypt/
+logs/
 .idea
 .env

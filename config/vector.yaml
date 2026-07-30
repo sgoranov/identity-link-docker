@@ -1,0 +1,59 @@
+sources:
+  docker_logs:
+    type: "docker_logs"
+    include_labels:
+      - "com.docker.compose.project=identity-link"
+    exclude_containers:
+      - "identity-link-vector"
+
+transforms:
+  parse_monolog:
+    type: "remap"
+    inputs:
+      - "docker_logs"
+    source: |
+      container_name = string!(.container_name)
+      is_php_container =
+        starts_with(container_name, "identity-link-core") ||
+        starts_with(container_name, "identity-link-db-users") ||
+        starts_with(container_name, "identity-link-db-clients") ||
+        starts_with(container_name, "identity-link-2fa") ||
+        starts_with(container_name, "identity-link-bff")
+
+      if is_php_container {
+        channel = "system"
+        parsed, err = parse_json(.message)
+
+        if err == null && is_object(parsed) && exists(parsed.channel) {
+          channel = string!(parsed.channel)
+        } else {
+          matches, err = parse_regex(.message, r'^\[[^\]]+\]\s+(?P<channel>[^.:\s]+)\.[A-Z]+:')
+
+          if err == null {
+            channel = matches.channel
+          }
+        }
+
+        if channel == "rest" {
+          .monolog_channel = "rest"
+        } else if channel == "deprecation" {
+          .monolog_channel = "deprecation"
+        } else if channel == "system" {
+          .monolog_channel = "system"
+        } else {
+          .monolog_channel = "application"
+        }
+      } else {
+        .monolog_channel = "system"
+      }
+
+      .log_date = format_timestamp!(.timestamp, "%Y-%m-%d")
+
+sinks:
+  local_files:
+    type: "file"
+    inputs:
+      - "parse_monolog"
+    path: "/output/{{ .container_name }}/{{ .monolog_channel }}-{{ .log_date }}.log"
+    encoding:
+      codec: "text"
