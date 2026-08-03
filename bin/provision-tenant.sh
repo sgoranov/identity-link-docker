@@ -13,19 +13,24 @@ DOMAIN_NAME="$1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SECRETS_DIR="$PROJECT_ROOT/config/secrets"
-KEYS_DIR="$PROJECT_ROOT/config/keys"
 
 OUTPUT_ID_PATH="$SECRETS_DIR/bff_client_id"
 OUTPUT_SECRET_PATH="$SECRETS_DIR/bff_client_secret"
-JWT_PRIVATE_KEY_PATH="$KEYS_DIR/core_jwt_private_key"
 CLIENT_API_URL="https://${DOMAIN_NAME}/clients/api/v1"
+CLIENT_AUDIENCE="https://${DOMAIN_NAME}/identity-link"
 GROUP_NAME="administrator"
 CLIENT_NAME="bff-client"
 SECRET_EXPIRATION_PERIOD="1y"
 REDIRECT_URIS="https://${DOMAIN_NAME}/bff/login_check"
 
 echo "Generating authentication token..."
-AUTH_TOKEN="$("$SCRIPT_DIR/generate-auth-token" --private-key="$JWT_PRIVATE_KEY_PATH")"
+AUTH_TOKEN="$(
+  docker compose \
+    -f "$PROJECT_ROOT/docker-compose.yml" \
+    -f "$PROJECT_ROOT/docker-compose.prod.yml" \
+    exec -T -e JWT_URL="$CLIENT_AUDIENCE" identity-link-core \
+    php bin/console identity-link:generate-token --sub data-generator
+)"
 
 echo "Creating the client ($CLIENT_NAME) for domain $DOMAIN_NAME..."
 TMP_OUTPUT=$(mktemp)
@@ -36,6 +41,7 @@ trap 'rm -f "$TMP_OUTPUT"' EXIT
   --insecure \
   --group "$GROUP_NAME" \
   --client "$CLIENT_NAME" \
+  --audience "$CLIENT_AUDIENCE" \
   --exp-period "$SECRET_EXPIRATION_PERIOD" \
   --redirect-uris "$REDIRECT_URIS" \
   --auth-token "$AUTH_TOKEN" > "$TMP_OUTPUT"

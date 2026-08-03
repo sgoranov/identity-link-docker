@@ -10,13 +10,14 @@ import (
 	"os"
 	"strings"
 
-    "data-generator/internal/api"
+	"data-generator/internal/api"
 	"data-generator/internal/cli"
 )
 
 type ClientPayload struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
+	Audience    string   `json:"audience"`
 	RedirectURI []string `json:"redirectUri"`
 	GrantTypes  []string `json:"grantTypes"`
 	Groups      []string `json:"groups"`
@@ -24,14 +25,15 @@ type ClientPayload struct {
 }
 
 type SecretPayload struct {
-	PasswordHint       string `json:"passwordHint"`
-	ExpirationPeriod   string `json:"expirationPeriod"`
-	Client             string `json:"client"`
+	PasswordHint     string `json:"passwordHint"`
+	ExpirationPeriod string `json:"expirationPeriod"`
+	Client           string `json:"client"`
 }
 
 func main() {
 	groupName := flag.String("group", "", "Group name")
 	clientName := flag.String("client", "", "Client name")
+	audience := flag.String("audience", "", "Client audience")
 	expirationPeriod := flag.String("exp-period", "", "Secret's expiration period (e.g., 1d, 1w, 1m, 3m, 9m, 1y or 2y)")
 	redirectUrisRaw := flag.String("redirect-uris", "", "Comma-separated list of redirect URIs")
 	apiUrl := flag.String("api-url", "https://example.com/clients/api/v1", "Base client API endpoint")
@@ -49,23 +51,24 @@ func main() {
 	cli.ValidateRequiredFlags(map[string]string{
 		"group":            *groupName,
 		"client":           *clientName,
+		"audience":         *audience,
 		"expirationPeriod": *expirationPeriod,
 		"redirect-uris":    *redirectUrisRaw,
 		"api-url":          *apiUrl,
 		"authToken":        *authToken,
 	}, flag.Usage)
 
-    // validate the expiration period
-    var allowedPeriods = map[string]struct{}{
-        "1d": {}, "1w": {}, "1m": {}, "3m": {}, "9m": {}, "1y": {}, "2y": {},
-    }
-    if _, isValid := allowedPeriods[*expirationPeriod]; !isValid {
+	// validate the expiration period
+	var allowedPeriods = map[string]struct{}{
+		"1d": {}, "1w": {}, "1m": {}, "3m": {}, "9m": {}, "1y": {}, "2y": {},
+	}
+	if _, isValid := allowedPeriods[*expirationPeriod]; !isValid {
 		fmt.Printf("Error: '%s' is not a valid period. Choose from 1d, 1w, 1m, 3m, 9m, 1y, 2y\n", *expirationPeriod)
 		os.Exit(1)
 	}
 
-    httpClient := api.NewClient(*insecure)
-    api.WaitForAPI(httpClient, "Client", *apiUrl);
+	httpClient := api.NewClient(*insecure)
+	api.WaitForAPI(httpClient, "Client", *apiUrl)
 
 	cleanApiUrl := strings.TrimSuffix(*apiUrl, "/")
 	queryBody, _ := json.Marshal(api.QueryPayload{
@@ -76,9 +79,9 @@ func main() {
 		Limit:      1,
 	})
 
-	req, _ := http.NewRequest("POST", cleanApiUrl + "/query", bytes.NewBuffer(queryBody))
+	req, _ := http.NewRequest("POST", cleanApiUrl+"/query", bytes.NewBuffer(queryBody))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer " + *authToken)
+	req.Header.Set("Authorization", "Bearer "+*authToken)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -99,9 +102,9 @@ func main() {
 		gBody := map[string]string{"name": *groupName}
 		gBytes, _ := json.Marshal(gBody)
 
-		req, _ = http.NewRequest("POST", cleanApiUrl + "/group", bytes.NewBuffer(gBytes))
+		req, _ = http.NewRequest("POST", cleanApiUrl+"/group", bytes.NewBuffer(gBytes))
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer " + *authToken)
+		req.Header.Set("Authorization", "Bearer "+*authToken)
 
 		resp, err = httpClient.Do(req)
 		if err != nil || resp.StatusCode != http.StatusCreated {
@@ -136,6 +139,7 @@ func main() {
 	clientPayload := ClientPayload{
 		Name:        *clientName,
 		Description: "description",
+		Audience:    *audience,
 		RedirectURI: redirectUris,
 		GrantTypes:  []string{"client_credentials", "authorization_code", "password", "refresh_token"},
 		Groups:      []string{groupID},
@@ -143,9 +147,9 @@ func main() {
 	}
 	clientBytes, _ := json.Marshal(clientPayload)
 
-	req, _ = http.NewRequest("POST", cleanApiUrl + "/client", bytes.NewBuffer(clientBytes))
+	req, _ = http.NewRequest("POST", cleanApiUrl+"/client", bytes.NewBuffer(clientBytes))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer " + *authToken)
+	req.Header.Set("Authorization", "Bearer "+*authToken)
 
 	resp, err = httpClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusCreated {
@@ -170,15 +174,15 @@ func main() {
 
 	// create client secret
 	secretPayload := SecretPayload{
-		PasswordHint:       "pass hint",
-		ExpirationPeriod:   *expirationPeriod,
-		Client:             clientID,
+		PasswordHint:     "pass hint",
+		ExpirationPeriod: *expirationPeriod,
+		Client:           clientID,
 	}
 	secretBytes, _ := json.Marshal(secretPayload)
 
-	req, _ = http.NewRequest("POST", cleanApiUrl + "/secret/issue", bytes.NewBuffer(secretBytes))
+	req, _ = http.NewRequest("POST", cleanApiUrl+"/secret/issue", bytes.NewBuffer(secretBytes))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer " + *authToken)
+	req.Header.Set("Authorization", "Bearer "+*authToken)
 
 	resp, err = httpClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusCreated {

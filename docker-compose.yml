@@ -8,6 +8,7 @@ services:
     environment:
       CONSENT_SCREEN_ENABLED: true
       LOGIN_TWO_FA_ENABLED: true
+      JWT_URL: https://${DOMAIN_NAME}/identity-link
       TWO_FA_INDEX_ENDPOINT: https://${DOMAIN_NAME}/2fa/2fa/verify/{id}
       RESET_PASSWORD_URL: https://${DOMAIN_NAME}/users/reset-password/{id}
     depends_on:

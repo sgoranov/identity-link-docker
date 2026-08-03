@@ -152,16 +152,15 @@ services:
     volumes:
       - ./runtime:/runtime
       - ./bin:/scripts:ro
-      - ./config/keys:/keys:ro
     environment:
       GROUP_NAME: administrator
       CLIENT_NAME: default-client
+      CLIENT_AUDIENCE: https://${DOMAIN_NAME}/identity-link
       SECRET_EXPIRATION_PERIOD: 1y
       USER_NAME: user
       USER_PASS: pass
       USER_EMAIL: test@${DOMAIN_NAME}
       REDIRECT_URIS: https://test.${DOMAIN_NAME}/auth/callback,https://${DOMAIN_NAME}/bff/login_check
-      JWT_PRIVATE_KEY_PATH: /keys/private_key
       CLIENT_API_URL: https://${DOMAIN_NAME}/clients/api/v1
       USER_API_URL: https://${DOMAIN_NAME}/users/api/v1
     command:
@@ -172,12 +171,13 @@ services:
         
         apk add --no-cache bash ca-certificates
 
-        AUTH_TOKEN=$$(/scripts/generate-auth-token --private-key="$$JWT_PRIVATE_KEY_PATH")        
+        AUTH_TOKEN=$$(cat /runtime/auth-token)
         /scripts/create-client \
           --api-url "$$CLIENT_API_URL" \
           --insecure \
           --group "$$GROUP_NAME" \
           --client "$$CLIENT_NAME" \
+          --audience "$$CLIENT_AUDIENCE" \
           --exp-period "$$SECRET_EXPIRATION_PERIOD" \
           --redirect-uris "$$REDIRECT_URIS" \
           --auth-token "$$AUTH_TOKEN" > /tmp/client_output.txt
@@ -198,12 +198,48 @@ services:
     depends_on:
       identity-link-keys-generator:
         condition: service_completed_successfully
+      identity-link-token-generator:
+        condition: service_completed_successfully
       identity-link-core:
         condition: service_healthy
       identity-link-db-users:
         condition: service_healthy
       identity-link-db-clients:
         condition: service_healthy
+    networks:
+      - identity-link-network
+
+  identity-link-token-generator:
+    container_name: identity-link-token-generator
+    image: identity-link-core:dev
+    environment:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_PRIVATE_KEY_PATH: /app/var/keys/private_key
+      JWT_PUBLIC_KEY_PATH: /app/var/keys/public_key
+      JWT_URL: https://${DOMAIN_NAME}/identity-link
+    entrypoint: []
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+
+        umask 077
+        php bin/console identity-link:generate-token \
+          --sub data-generator \
+          > /runtime/auth-token
+    volumes:
+      - ./src/identity-link-core:/app
+      - ./config/keys:/app/var/keys:ro
+      - ./runtime:/runtime
+    depends_on:
+      identity-link-keys-generator:
+        condition: service_completed_successfully
+      identity-link-redis:
+        condition: service_started
     networks:
       - identity-link-network
 
