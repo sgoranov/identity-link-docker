@@ -81,7 +81,7 @@ services:
       OIDC_WELL_KNOWN_URL: https://${DOMAIN_NAME}/.well-known/openid-configuration
       POST_LOGIN_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console
       POST_LOGOUT_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console/logout-success
-      PROXY_SERVICE_BASE_URLS: "{\"users\":\"https://${DOMAIN_NAME}/users\",\"clients\":\"https://${DOMAIN_NAME}/clients\"}"
+      PROXY_SERVICE_BASE_URLS: "{\"users\":\"https://${DOMAIN_NAME}/users\",\"clients\":\"https://${DOMAIN_NAME}/clients\",\"authorization-metadata\":\"https://${DOMAIN_NAME}/api/v1/authorization\"}"
     networks:
       - identity-link-network
 
