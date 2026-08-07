@@ -7,3 +7,4 @@ config/letsencrypt/
 logs/
 .idea
 .env
+docker-compose.override.yml
