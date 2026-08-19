@@ -83,7 +83,7 @@ services:
     extra_hosts:
       - "${DOMAIN_NAME}:host-gateway"
     depends_on:
-      identity-link-data-generator:
+      identity-link-client-generator:
         condition: service_completed_successfully
 
   identity-link-console:
@@ -146,80 +146,27 @@ services:
       - ./src/identity-link-core:/app
       - ./config/keys:/app/var/keys
 
-  identity-link-data-generator:
-    container_name: identity-link-data-generator
-    image: alpine:latest
-    volumes:
-      - ./runtime:/runtime
-      - ./bin:/scripts:ro
-    environment:
-      GROUP_NAME: administrator
-      CLIENT_NAME: default-client
-      CLIENT_AUDIENCE: https://${DOMAIN_NAME}/identity-link
-      SECRET_EXPIRATION_PERIOD: 1y
-      USER_NAME: user
-      USER_PASS: pass
-      USER_EMAIL: test@${DOMAIN_NAME}
-      REDIRECT_URIS: https://test.${DOMAIN_NAME}/auth/callback,https://${DOMAIN_NAME}/bff/login_check
-      CLIENT_API_URL: https://${DOMAIN_NAME}/clients/api/v1
-      USER_API_URL: https://${DOMAIN_NAME}/users/api/v1
-    command:
-      - /bin/sh
-      - -c
-      - |
-        set -eu
-        
-        apk add --no-cache bash ca-certificates
-
-        AUTH_TOKEN=$$(cat /runtime/auth-token)
-        /scripts/create-client \
-          --api-url "$$CLIENT_API_URL" \
-          --insecure \
-          --group "$$GROUP_NAME" \
-          --client "$$CLIENT_NAME" \
-          --audience "$$CLIENT_AUDIENCE" \
-          --exp-period "$$SECRET_EXPIRATION_PERIOD" \
-          --redirect-uris "$$REDIRECT_URIS" \
-          --auth-token "$$AUTH_TOKEN" > /tmp/client_output.txt
-        
-        sed -n 's/^CLIENT_ID=/OIDC_CLIENT_ID=/p' /tmp/client_output.txt > /runtime/client-data.txt
-        sed -n 's/^CLIENT_SECRET=/OIDC_CLIENT_SECRET=/p' /tmp/client_output.txt >> /runtime/client-data.txt
-        
-        /scripts/create-user \
-          --api-url "$$USER_API_URL" \
-          --insecure \
-          --group "$$GROUP_NAME" \
-          --username "$$USER_NAME" \
-          --password "$$USER_PASS" \
-          --email "$$USER_EMAIL" \
-          --auth-token "$$AUTH_TOKEN"
-    extra_hosts:
-      - "${DOMAIN_NAME}:host-gateway"
-    depends_on:
-      identity-link-keys-generator:
-        condition: service_completed_successfully
-      identity-link-token-generator:
-        condition: service_completed_successfully
-      identity-link-core:
-        condition: service_healthy
-      identity-link-db-users:
-        condition: service_healthy
-      identity-link-db-clients:
-        condition: service_healthy
-    networks:
-      - identity-link-network
-
-  identity-link-token-generator:
-    container_name: identity-link-token-generator
-    image: identity-link-core:dev
+  identity-link-user-generator:
+    container_name: identity-link-user-generator
+    build:
+      context: ./src/identity-link-db-users
+      target: dev
+    image: identity-link-db-users:dev
     environment:
       APP_ENV: dev
       APP_SECRET: ${APP_SECRET}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      JWT_PRIVATE_KEY_PATH: /app/var/keys/private_key
-      JWT_PUBLIC_KEY_PATH: /app/var/keys/public_key
-      JWT_URL: https://${DOMAIN_NAME}/identity-link
+      FEATURE_PASSWORD_VALIDATION_ENABLED: false
+      GROUP_NAME: administrator
+      GROUP_AUDIENCE: https://${DOMAIN_NAME}/identity-link
+      GROUP_SCOPES: oidc.default identity-link.all
+      USER_NAME: user
+      USER_EMAIL: test@${DOMAIN_NAME}
+      USER_FIRST_NAME: Test
+      USER_LAST_NAME: User
+      USER_PASSWORD: pass
+      USER_GRANT_TYPES: password authorization_code refresh_token
     entrypoint: []
     command:
       - /bin/sh
@@ -227,49 +174,110 @@ services:
       - |
         set -eu
 
-        umask 077
-        php bin/console identity-link:generate-token \
-          --sub data-generator \
-          > /runtime/auth-token
+        composer install --no-interaction --no-scripts --no-progress
+
+        set --
+        for scope in $$GROUP_SCOPES; do
+          set -- "$$@" --scope "$$scope"
+        done
+
+        php bin/console app:configure-group-scopes \
+          --group "$$GROUP_NAME" \
+          --audience "$$GROUP_AUDIENCE" \
+          "$$@"
+
+        set --
+        for grant_type in $$USER_GRANT_TYPES; do
+          set -- "$$@" --grant-type "$$grant_type"
+        done
+
+        php bin/console app:create-user \
+          --username "$$USER_NAME" \
+          --email "$$USER_EMAIL" \
+          --first-name "$$USER_FIRST_NAME" \
+          --last-name "$$USER_LAST_NAME" \
+          --password "$$USER_PASSWORD" \
+          --group "$$GROUP_NAME" \
+          "$$@"
     volumes:
-      - ./src/identity-link-core:/app
-      - ./config/keys:/app/var/keys:ro
-      - ./runtime:/runtime
+      - ./src/identity-link-db-users:/app
     depends_on:
-      identity-link-keys-generator:
-        condition: service_completed_successfully
-      identity-link-redis:
-        condition: service_started
+      identity-link-db-users:
+        condition: service_healthy
     networks:
       - identity-link-network
 
-  identity-link-test-client:
-    container_name: identity-link-test-client
-    image: ghcr.io/beryju/oidc-test-client
-    volumes:
-      - ./runtime:/runtime
+  identity-link-client-generator:
+    container_name: identity-link-client-generator
+    build:
+      context: ./src/identity-link-db-clients
+      target: dev
+    image: identity-link-db-clients:dev
     environment:
-      OIDC_PROVIDER: https://${DOMAIN_NAME}
-      OIDC_ROOT_URL: https://test.${DOMAIN_NAME}
-      OIDC_TLS_VERIFY: false
-      OIDC_DO_INTROSPECTION: false
-    entrypoint:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      GROUP_NAME: administrator
+      GROUP_AUDIENCE: https://${DOMAIN_NAME}/identity-link
+      GROUP_SCOPES: oidc.default identity-link.all
+      CLIENT_NAME: default-client
+      CLIENT_DESCRIPTION: Default development client
+      CLIENT_AUDIENCE: https://${DOMAIN_NAME}/identity-link
+      CLIENT_REDIRECT_URIS: https://${DOMAIN_NAME}/bff/login_check
+      CLIENT_GRANT_TYPES: client_credentials password authorization_code refresh_token
+    entrypoint: []
+    command:
       - /bin/sh
       - -c
       - |
         set -eu
 
-        . /runtime/client-data.txt
+        composer install --no-interaction --no-scripts --no-progress
 
-        export OIDC_CLIENT_ID
-        export OIDC_CLIENT_SECRET
+        set --
+        for scope in $$GROUP_SCOPES; do
+          set -- "$$@" --scope "$$scope"
+        done
 
-        exec /oidc-test-client
-    extra_hosts:
-      - "${DOMAIN_NAME}:host-gateway"
+        php bin/console app:configure-group-scopes \
+          --group "$$GROUP_NAME" \
+          --audience "$$GROUP_AUDIENCE" \
+          "$$@"
+
+        set --
+        for redirect_uri in $$CLIENT_REDIRECT_URIS; do
+          set -- "$$@" --redirect-uri "$$redirect_uri"
+        done
+
+        for grant_type in $$CLIENT_GRANT_TYPES; do
+          set -- "$$@" --grant-type "$$grant_type"
+        done
+
+        php bin/console app:create-client \
+          --name "$$CLIENT_NAME" \
+          --description "$$CLIENT_DESCRIPTION" \
+          --audience "$$CLIENT_AUDIENCE" \
+          --group "$$GROUP_NAME" \
+          "$$@" \
+          > /tmp/client-output.txt
+
+        cat /tmp/client-output.txt
+
+        CLIENT_ID=$$(sed -n 's/^[[:space:]]*Client ID[[:space:].]*//p' /tmp/client-output.txt)
+        CLIENT_SECRET=$$(sed -n 's/^[[:space:]]*Client secret[[:space:].]*//p' /tmp/client-output.txt)
+        test -n "$$CLIENT_ID"
+        test -n "$$CLIENT_SECRET"
+
+        umask 077
+        echo "OIDC_CLIENT_ID=$$CLIENT_ID" > /runtime/client-data.txt
+        echo "OIDC_CLIENT_SECRET=$$CLIENT_SECRET" >> /runtime/client-data.txt
+    volumes:
+      - ./src/identity-link-db-clients:/app
+      - ./runtime:/runtime
     depends_on:
-      identity-link-data-generator:
-        condition: service_completed_successfully
+      identity-link-db-clients:
+        condition: service_healthy
     networks:
       - identity-link-network
 
