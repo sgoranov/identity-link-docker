@@ -14,40 +14,44 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SECRETS_DIR="$PROJECT_ROOT/config/secrets"
 
+cd "$PROJECT_ROOT"
+
 OUTPUT_ID_PATH="$SECRETS_DIR/bff_client_id"
 OUTPUT_SECRET_PATH="$SECRETS_DIR/bff_client_secret"
-CLIENT_API_URL="https://${DOMAIN_NAME}/clients/api/v1"
 CLIENT_AUDIENCE="https://${DOMAIN_NAME}/identity-link"
 GROUP_NAME="administrator"
 CLIENT_NAME="bff-client"
-SECRET_EXPIRATION_PERIOD="1y"
+CLIENT_DESCRIPTION="BFF production client"
 REDIRECT_URIS="https://${DOMAIN_NAME}/bff/login_check"
-
-echo "Generating authentication token..."
-AUTH_TOKEN="$(
-  docker compose \
-    -f "$PROJECT_ROOT/docker-compose.yml" \
-    -f "$PROJECT_ROOT/docker-compose.prod.yml" \
-    exec -T -e JWT_URL="$CLIENT_AUDIENCE" identity-link-core \
-    php bin/console identity-link:generate-token --sub data-generator
-)"
 
 echo "Creating the client ($CLIENT_NAME) for domain $DOMAIN_NAME..."
 TMP_OUTPUT=$(mktemp)
 trap 'rm -f "$TMP_OUTPUT"' EXIT
 
-"$SCRIPT_DIR/create-client" \
-  --api-url "$CLIENT_API_URL" \
-  --insecure \
+docker compose exec -T identity-link-db-clients \
+  php bin/console app:configure-group-scopes \
   --group "$GROUP_NAME" \
-  --client "$CLIENT_NAME" \
   --audience "$CLIENT_AUDIENCE" \
-  --exp-period "$SECRET_EXPIRATION_PERIOD" \
-  --redirect-uris "$REDIRECT_URIS" \
-  --auth-token "$AUTH_TOKEN" > "$TMP_OUTPUT"
+  --scope oidc.default \
+  --scope identity-link.all
 
-EXTRACTED_ID=$(sed -n 's/^CLIENT_ID=//p' "$TMP_OUTPUT" | tr -d '[:space:]')
-EXTRACTED_SECRET=$(sed -n 's/^CLIENT_SECRET=//p' "$TMP_OUTPUT" | tr -d '[:space:]')
+docker compose exec -T identity-link-db-clients \
+  php bin/console app:create-client \
+  --name "$CLIENT_NAME" \
+  --description "$CLIENT_DESCRIPTION" \
+  --audience "$CLIENT_AUDIENCE" \
+  --group "$GROUP_NAME" \
+  --redirect-uri "$REDIRECT_URIS" \
+  --grant-type client_credentials \
+  --grant-type password \
+  --grant-type authorization_code \
+  --grant-type refresh_token \
+  > "$TMP_OUTPUT"
+
+cat "$TMP_OUTPUT"
+
+EXTRACTED_ID=$(sed -n 's/^[[:space:]]*Client ID[[:space:].]*//p' "$TMP_OUTPUT" | tr -d '[:space:]')
+EXTRACTED_SECRET=$(sed -n 's/^[[:space:]]*Client secret[[:space:].]*//p' "$TMP_OUTPUT" | tr -d '[:space:]')
 
 if [ -z "$EXTRACTED_ID" ] || [ -z "$EXTRACTED_SECRET" ]; then
     echo "ERROR: Failed to extract CLIENT_ID or CLIENT_SECRET from the command output." >&2
@@ -56,24 +60,36 @@ if [ -z "$EXTRACTED_ID" ] || [ -z "$EXTRACTED_SECRET" ]; then
     exit 1
 fi
 
-echo -n "$EXTRACTED_ID" > "$OUTPUT_ID_PATH"
+printf '%s' "$EXTRACTED_ID" > "$OUTPUT_ID_PATH"
 chmod 600 "$OUTPUT_ID_PATH"
 
-echo -n "$EXTRACTED_SECRET" > "$OUTPUT_SECRET_PATH"
+printf '%s' "$EXTRACTED_SECRET" > "$OUTPUT_SECRET_PATH"
 chmod 600 "$OUTPUT_SECRET_PATH"
 
 echo "Client ID saved to: $OUTPUT_ID_PATH"
 echo "Client Secret saved to: $OUTPUT_SECRET_PATH"
 
-USER_API_URL="https://${DOMAIN_NAME}/users/api/v1"
 USER_NAME=admin
 USER_PASSWORD=7MkhqneerPNSsiws
 USER_EMAIL=admin@${DOMAIN_NAME}
-"$SCRIPT_DIR/create-user" \
-  --api-url "$USER_API_URL" \
-  --auth-token "$AUTH_TOKEN" \
-  --insecure \
-  --group "$GROUP_NAME" \
-  --username "$USER_NAME" \
-  --password "$USER_PASSWORD" \
-  --email "$USER_EMAIL"
+USER_FIRST_NAME=Admin
+USER_LAST_NAME=User
+
+docker compose exec -T identity-link-db-users \
+  php bin/console app:configure-group-scopes \
+    --group "$GROUP_NAME" \
+    --audience "$CLIENT_AUDIENCE" \
+    --scope oidc.default \
+    --scope identity-link.all
+
+docker compose exec -T identity-link-db-users \
+  php bin/console app:create-user \
+    --username "$USER_NAME" \
+    --email "$USER_EMAIL" \
+    --first-name "$USER_FIRST_NAME" \
+    --last-name "$USER_LAST_NAME" \
+    --password "$USER_PASSWORD" \
+    --group "$GROUP_NAME" \
+    --grant-type password \
+    --grant-type authorization_code \
+    --grant-type refresh_token
