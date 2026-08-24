@@ -67,17 +67,17 @@ services:
     image: identity-link-bff:dev
     volumes:
       - ./src/identity-link-bff:/app
+      - ./config/certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
       - ./runtime:/runtime
     environment:
       APP_ENV: dev
       APP_SECRET: ${APP_SECRET}
       PROXY_DEBUG: true
-      HTTP_CLIENT_SSL_VERIFYPEER: 0
-      HTTP_CLIENT_SSL_VERIFYHOST: 0
     entrypoint:
       - /bin/sh
       - -c
       - |
+        update-ca-certificates
         cp /runtime/client-data.txt /app/.env.local
         exec /entrypoint.sh frankenphp run --config /etc/caddy/Caddyfile
     extra_hosts:
@@ -98,8 +98,8 @@ services:
   identity-link-proxy:
     volumes:
       - ./config/nginx.dev.conf.template:/etc/nginx/nginx.conf.template:ro
-      - ./config/certificates/local-dev.crt:/etc/nginx/certs/server.crt:ro
-      - ./config/certificates/local-dev.key:/etc/nginx/certs/server.key:ro
+      - ./config/certificates/server.crt:/etc/nginx/certs/server.crt:ro
+      - ./config/certificates/server.key:/etc/nginx/certs/server.key:ro
 
   identity-link-adminer:
     container_name: identity-link-adminer
