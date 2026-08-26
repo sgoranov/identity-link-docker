@@ -17,6 +17,8 @@ services:
         target: db_user
       - source: database_password
         target: db_password
+    volumes:
+      - ./config/authorization:/app/config/authorization
 
   identity-link-db-users:
     image: ghcr.io/sgoranov/identity-link-db-users:develop
