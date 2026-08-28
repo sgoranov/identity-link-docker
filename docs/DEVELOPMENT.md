@@ -55,10 +55,22 @@ Generate local development certificates using mkcert and the provided helper scr
 
 ## Start the development environment
 
-Start all services:
+Create a symbolic link to use the development Compose configuration as the local override:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+ln -rs docker-compose.dev.yml docker-compose.override.yml
+```
+
+Docker Compose loads `docker-compose.override.yml` automatically, so you can start all services with:
+
+```bash
+docker compose up -d
+```
+
+To stop and remove the development services, run:
+
+```bash
+docker compose down
 ```
 
 ## Default development credentials

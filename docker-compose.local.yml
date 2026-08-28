@@ -1,6 +1,7 @@
 services:
 
   identity-link-core:
+    image: ghcr.io/sgoranov/identity-link-core:develop
     environment:
       RESET_PASSWORD_URL: ''
     secrets:
@@ -20,6 +21,7 @@ services:
       - ./config/authorization:/app/config/authorization
 
   identity-link-db-users:
+    image: ghcr.io/sgoranov/identity-link-db-users:develop
     environment:
       FEATURE_RESET_PASSWORD_ENABLED: false
     secrets:
@@ -31,6 +33,7 @@ services:
         target: db_password
 
   identity-link-db-clients:
+    image: ghcr.io/sgoranov/identity-link-db-clients:develop
     secrets:
       - source: db_clients_app_secret
         target: app_secret
@@ -40,6 +43,7 @@ services:
         target: db_password
 
   identity-link-2fa:
+    image: ghcr.io/sgoranov/identity-link-2fa:develop
     secrets:
       - source: 2fa_app_secret
         target: app_secret
@@ -49,6 +53,9 @@ services:
         target: db_password
 
   identity-link-bff:
+    image: ghcr.io/sgoranov/identity-link-bff:develop
+    volumes:
+      - ./config/certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
     secrets:
       - source: bff_app_secret
         target: app_secret
@@ -56,6 +63,17 @@ services:
         target: client_id
       - source: bff_client_secret
         target: client_secret
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        update-ca-certificates
+        exec /entrypoint.sh frankenphp run --config /etc/caddy/Caddyfile
+    extra_hosts:
+      - "${DOMAIN_NAME}:host-gateway"
+
+  identity-link-console:
+    image: ghcr.io/sgoranov/identity-link-console:develop
 
   identity-link-proxy:
     secrets:

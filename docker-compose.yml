@@ -1,11 +1,14 @@
+name: identity-link
+
 services:
 
   identity-link-core:
     container_name: identity-link-core
-    image: ghcr.io/sgoranov/identity-link-core:1.0.0
+    image: ghcr.io/sgoranov/identity-link-core:1.1.0
     environment:
       CONSENT_SCREEN_ENABLED: true
       LOGIN_TWO_FA_ENABLED: true
+      JWT_URL: https://${DOMAIN_NAME}/identity-link
       TWO_FA_INDEX_ENDPOINT: https://${DOMAIN_NAME}/2fa/2fa/verify/{id}
       RESET_PASSWORD_URL: https://${DOMAIN_NAME}/users/reset-password/{id}
     depends_on:
@@ -22,7 +25,7 @@ services:
 
   identity-link-db-users:
     container_name: identity-link-db-users
-    image: ghcr.io/sgoranov/identity-link-db-users:1.0.0
+    image: ghcr.io/sgoranov/identity-link-db-users:1.1.0
     environment:
       RESET_PASSWORD_REDIRECT_URL: https://${DOMAIN_NAME}/login/password/{id}
       FEATURE_RESET_PASSWORD_ENABLED: true
@@ -41,7 +44,7 @@ services:
 
   identity-link-db-clients:
     container_name: identity-link-db-clients
-    image: ghcr.io/sgoranov/identity-link-db-clients:1.0.0
+    image: ghcr.io/sgoranov/identity-link-db-clients:1.1.0
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -56,7 +59,7 @@ services:
 
   identity-link-2fa:
     container_name: identity-link-2fa
-    image: ghcr.io/sgoranov/identity-link-2fa:1.0.0
+    image: ghcr.io/sgoranov/identity-link-2fa:1.1.0
     environment:
       TWO_FA_REDIRECT_URI: https://${DOMAIN_NAME}/login/2fa
     depends_on:
@@ -73,18 +76,18 @@ services:
 
   identity-link-bff:
     container_name: identity-link-bff
-    image: ghcr.io/sgoranov/identity-link-bff:1.0.0
+    image: ghcr.io/sgoranov/identity-link-bff:1.1.0
     environment:
       OIDC_WELL_KNOWN_URL: https://${DOMAIN_NAME}/.well-known/openid-configuration
       POST_LOGIN_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console
       POST_LOGOUT_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console/logout-success
-      PROXY_SERVICE_BASE_URLS: "{\"users\":\"https://${DOMAIN_NAME}/users\",\"clients\":\"https://${DOMAIN_NAME}/clients\"}"
+      PROXY_SERVICE_BASE_URLS: "{\"users\":\"https://${DOMAIN_NAME}/users\",\"clients\":\"https://${DOMAIN_NAME}/clients\",\"authorization-metadata\":\"https://${DOMAIN_NAME}/api/v1/authorization\"}"
     networks:
       - identity-link-network
 
   identity-link-console:
     container_name: identity-link-console
-    image: ghcr.io/sgoranov/identity-link-console:1.0.1
+    image: ghcr.io/sgoranov/identity-link-console:1.1.0
     environment:
       VITE_MAX_USER_GROUPS: 20
       VITE_MAX_CLIENT_GROUPS: 20
@@ -132,6 +135,35 @@ services:
     image: redis:alpine
     networks:
       - identity-link-network
+
+  identity-link-vector:
+    container_name: identity-link-vector
+    image: timberio/vector:0.57.0-alpine
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/vector.yaml:/etc/vector/vector.yaml:ro
+      - ./logs:/output
+    restart: unless-stopped
+    networks:
+      - identity-link-network
+
+  identity-link-log-retention:
+    container_name: identity-link-log-retention
+    image: alpine:3.20
+    volumes:
+      - ./logs:/logs
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eux
+        
+        while true; do
+          find /logs -type f -name '*-????-??-??.log' -mtime +7 -delete
+          sleep 3600
+        done
+    restart: unless-stopped
+    network_mode: "none"
 
 networks:
   identity-link-network:

@@ -5,8 +5,8 @@ set -euo pipefail
 DOMAIN="${1:-example.com}"
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CERT_DIR="$BASE_DIR/config/certificates"
-CRT_FILE="local-dev.crt"
-KEY_FILE="local-dev.key"
+CRT_FILE="server.crt"
+KEY_FILE="server.key"
 CA_FILE="rootCA.crt"
 
 if ! command -v mkcert >/dev/null 2>&1; then

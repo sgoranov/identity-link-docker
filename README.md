@@ -4,6 +4,11 @@ This repository provides a streamlined way to run the complete **Identity Link**
 using **Docker** and **Docker Compose**.
 The following guide explains how to configure, initialize, start, and manage an Identity Link deployment.
 
+> **What's new?**
+>
+> See the [CHANGELOG.md](CHANGELOG.md) for information about new features,
+> improvements, and changes between releases.
+
 ## Prerequisites
 
 Before starting, make sure you have:
@@ -24,6 +29,15 @@ cp .env.example.prod .env
 ```
 
 Update the .env file according to your environment and deployment requirements.
+
+Create a symbolic link to use the production Compose configuration as the local override:
+
+```bash
+ln -rs docker-compose.prod.yml docker-compose.override.yml
+```
+
+Docker Compose loads `docker-compose.override.yml` automatically, so the commands below do not need
+explicit `-f` options.
 
 ## Generate HTTPS certificates
 
@@ -86,10 +100,7 @@ Generate the required JWT keys, encryption keys, and application secrets:
 Start all services using Docker Compose:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.prod.yml \
-  up -d
+docker compose up -d
 ```
 
 Docker Compose will start all required Identity Link services in the background.
@@ -128,10 +139,7 @@ password unchanged can allow unauthorized access to your Identity Link installat
 To stop and remove all running services:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.prod.yml \
-  down
+docker compose down
 ```
 
 ## Integrate Applications with Identity Link
@@ -152,10 +160,7 @@ Use this endpoint to configure your applications and integrate them with Identit
 To inspect logs for all services:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.prod.yml \
-  logs -f
+docker compose logs -f
 ```
 
 ### Restart services
@@ -163,10 +168,7 @@ docker compose \
 To restart the deployment:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.prod.yml \
-  restart
+docker compose restart
 ```
 
 ### Pull updates
@@ -174,10 +176,7 @@ docker compose \
 To download the latest Identity Link images from the configured container registry:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.prod.yml \
-  pull
+docker compose pull
 ```
 
 ## Further reading
