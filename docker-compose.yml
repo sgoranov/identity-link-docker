@@ -27,6 +27,7 @@ services:
     container_name: identity-link-db-users
     image: ghcr.io/sgoranov/identity-link-db-users:1.1.0
     environment:
+      JWT_URL: https://${DOMAIN_NAME}/identity-link
       RESET_PASSWORD_REDIRECT_URL: https://${DOMAIN_NAME}/login/password/{id}
       FEATURE_RESET_PASSWORD_ENABLED: true
       FEATURE_PASSWORD_VALIDATION_ENABLED: true
@@ -45,6 +46,8 @@ services:
   identity-link-db-clients:
     container_name: identity-link-db-clients
     image: ghcr.io/sgoranov/identity-link-db-clients:1.1.0
+    environment:
+      JWT_URL: https://${DOMAIN_NAME}/identity-link
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -61,6 +64,7 @@ services:
     container_name: identity-link-2fa
     image: ghcr.io/sgoranov/identity-link-2fa:1.1.0
     environment:
+      JWT_URL: https://${DOMAIN_NAME}/identity-link
       TWO_FA_REDIRECT_URI: https://${DOMAIN_NAME}/login/2fa
     depends_on:
       identity-link-database-server:
