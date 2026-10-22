@@ -172,6 +172,28 @@ Once Identity Link is running, you can use the administration console to manage:
 The OpenID Connect discovery endpoint is available at: https://your-domain.com/.well-known/openid-configuration.
 Use this endpoint to configure your applications and integrate them with Identity Link.
 
+### Create a sign-in client
+
+To register an application that signs users in with OpenID Connect, run:
+
+```bash
+/bin/bash bin/create-client.sh \
+  --audience https://app.example.com \
+  --redirect-uri https://app.example.com/callback
+```
+
+The script names the client after the audience, here `app-example-com`, and:
+
+* declares the audience in `config/authorization/client-app-example-com.yaml`, unless it is declared already;
+* creates the group `app-example-com` with the OpenID Connect scopes (`oidc.default`) for the audience;
+* creates the client with that group, the `authorization_code` and `refresh_token` grant types and a secret,
+  and prints the client ID and secret.
+
+The client secret is shown only once, so store it securely. `--redirect-uri` can be repeated. The optional `--name`
+sets the client and group name, and `--description` sets the client description. Users need no extra configuration,
+because every user holds the OpenID Connect scopes.
+The application must request the scopes it needs, for example `openid profile email offline_access`.
+
 ## Troubleshooting
 
 ### Check service logs
