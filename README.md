@@ -52,7 +52,7 @@ Replace your-domain.com and admin@your-domain.com with your actual domain and em
 ```bash
 docker run --rm -it \
   -p 80:80 \
-  -v "$PWD/letsencrypt:/etc/letsencrypt" \
+  -v "$PWD/config/letsencrypt:/etc/letsencrypt" \
   certbot/certbot certonly \
   --standalone \
   -d your-domain.com \
@@ -66,11 +66,30 @@ docker run --rm -it \
 Certificates can be renewed using the same Certbot Docker image:
 
 ```bash
+# Port 80 must be free, so stop the proxy first
+docker compose stop identity-link-proxy
 docker run --rm \
   -p 80:80 \
-  -v "$PWD/letsencrypt:/etc/letsencrypt" \
+  -v "$PWD/config/letsencrypt:/etc/letsencrypt" \
   certbot/certbot renew
+docker compose start identity-link-proxy
 ```
+
+### Verify the certificates
+
+Check the expiry date of the certificate on disk:
+
+```bash
+openssl x509 -enddate -noout -in config/letsencrypt/live/your-domain.com/fullchain.pem
+```
+
+Check the certificate actually served by the proxy:
+
+```bash
+echo | openssl s_client -connect your-domain.com:443 -servername your-domain.com 2>/dev/null | openssl x509 -noout -enddate
+```
+
+Both should show the same `notAfter=` date. If the served one is older, restart the proxy with `docker compose restart proxy`.
 
 ### Configure certificate paths
 
