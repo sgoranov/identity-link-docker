@@ -5,6 +5,32 @@ events {
 http {
     resolver 127.0.0.11 valid=10s ipv6=off;
 
+    # Services such as the BFF call each other through this proxy, so an incoming ID in the format nginx
+    # generates is kept and both hops share it. Anything else is replaced with a new ID.
+    map $http_x_request_id $req_id {
+        "~^[0-9a-f]{32}$" $http_x_request_id;
+        default $request_id;
+    }
+
+    log_format access escape=json '{'
+        '"time":"$time_iso8601",'
+        '"request_id":"$req_id",'
+        '"remote_addr":"$remote_addr",'
+        '"host":"$host",'
+        '"method":"$request_method",'
+        '"uri":"$request_uri",'
+        '"status":$status,'
+        '"body_bytes_sent":$body_bytes_sent,'
+        '"request_time":$request_time,'
+        '"upstream":"$proxy_host",'
+        '"upstream_status":"$upstream_status",'
+        '"upstream_response_time":"$upstream_response_time",'
+        '"referer":"$http_referer",'
+        '"user_agent":"$http_user_agent"'
+    '}';
+
+    access_log /dev/stdout access;
+
     server {
         listen 80;
         server_name ${DOMAIN_NAME};
@@ -37,6 +63,7 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Request-Id $req_id;
         }
 
         location /users/ {
@@ -47,6 +74,7 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Forwarded-Prefix /users;
         }
 
@@ -58,6 +86,7 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Forwarded-Prefix /clients;
         }
 
@@ -69,6 +98,7 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Forwarded-Prefix /2fa;
         }
 
@@ -83,6 +113,7 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
@@ -96,6 +127,7 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-Prefix /bff;
         }
