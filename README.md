@@ -135,18 +135,28 @@ Once all services are running, create the initial tenant, client, and administra
 
 Replace your-domain.com with your configured domain.
 
+The script creates the administrator `admin` with a random password and prints it at the end:
+
+```txt
+Administrator "admin" was created.
+
+  Username:  admin
+  Password:  <generated password>
+```
+
+**Important**: The password is shown only once and is not stored anywhere else. Save it in a password manager
+before you continue.
+
 ## Access the Identity Link console
 
 Open your browser and navigate to: https://your-domain.com/admin-console.
-The default administrator credentials are:
+Sign in as `admin` with the password that `bin/provision-tenant.sh` printed.
 
-```txt
-username: admin
-password: 7MkhqneerPNSsiws
+If you lose the password, generate a new one:
+
+```bash
+docker compose exec identity-link-db-users php bin/console app:reset-user-password --username admin
 ```
-
-**Important**: Change the administrator password immediately after the first login. Leaving the default 
-password unchanged can allow unauthorized access to your Identity Link installation.
 
 ## Stop Identity Link services
 

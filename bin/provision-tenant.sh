@@ -70,7 +70,8 @@ echo "Client ID saved to: $OUTPUT_ID_PATH"
 echo "Client Secret saved to: $OUTPUT_SECRET_PATH"
 
 USER_NAME=admin
-USER_PASSWORD=7MkhqneerPNSsiws
+# 18 random bytes in base64url, as app:reset-user-password generates them. Printed once, at the end.
+USER_PASSWORD=$(head -c 18 /dev/urandom | base64 | tr '+/' '-_')
 USER_EMAIL=admin@${DOMAIN_NAME}
 USER_FIRST_NAME=Admin
 USER_LAST_NAME=User
@@ -82,14 +83,26 @@ docker compose exec -T identity-link-db-users \
     --scope oidc.default \
     --scope identity-link.all
 
+# --password= with "=": Symfony Console does not take a separate value that starts with "-", which the password may.
 docker compose exec -T identity-link-db-users \
   php bin/console app:create-user \
     --username "$USER_NAME" \
     --email "$USER_EMAIL" \
     --first-name "$USER_FIRST_NAME" \
     --last-name "$USER_LAST_NAME" \
-    --password "$USER_PASSWORD" \
+    --password="$USER_PASSWORD" \
     --group "$GROUP_NAME" \
     --grant-type password \
     --grant-type authorization_code \
     --grant-type refresh_token
+
+cat <<EOF
+
+Administrator "$USER_NAME" was created.
+
+  Username:  $USER_NAME
+  Password:  $USER_PASSWORD
+
+Sign in at https://${DOMAIN_NAME}/admin-console.
+Store the password securely; it will not be shown again.
+EOF

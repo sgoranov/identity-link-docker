@@ -97,9 +97,8 @@ done
 DOMAIN_NAME=identity-link.test
 RP_AUDIENCE="https://rp.$DOMAIN_NAME"
 RP_REDIRECT_URI="$RP_AUDIENCE/callback"
-# The administrator bin/provision-tenant.sh creates.
+# The administrator bin/provision-tenant.sh creates. It generates the password and prints it.
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=7MkhqneerPNSsiws
 # The audience bin/provision-tenant.sh gives the BFF client. The console's rights are scopes for it.
 CONSOLE_AUDIENCE="https://$DOMAIN_NAME/identity-link"
 # The name of the system user, client and groups, see "Creating the system records".
@@ -286,7 +285,16 @@ if ! docker compose up --detach --wait --wait-timeout 300 --quiet-pull; then
 fi
 
 step "Provisioning the tenant"
-bin/provision-tenant.sh "$DOMAIN_NAME"
+if ! PROVISION_OUTPUT=$(bin/provision-tenant.sh "$DOMAIN_NAME"); then
+    echo "$PROVISION_OUTPUT" >&2
+    exit 1
+fi
+echo "$PROVISION_OUTPUT"
+ADMIN_PASSWORD=$(sed -n 's/^[[:space:]]*Password:[[:space:]]*//p' <<< "$PROVISION_OUTPUT")
+if [ -z "$ADMIN_PASSWORD" ]; then
+    echo "ERROR: bin/provision-tenant.sh did not print the administrator's password." >&2
+    exit 1
+fi
 
 step "Creating a sign-in client"
 CLIENT_OUTPUT=$(bin/create-client.sh --name e2e-rp --audience "$RP_AUDIENCE" --redirect-uri "$RP_REDIRECT_URI")
