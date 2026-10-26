@@ -4,11 +4,6 @@ This repository provides a streamlined way to run the complete **Identity Link**
 using **Docker** and **Docker Compose**.
 The following guide explains how to configure, initialize, start, and manage an Identity Link deployment.
 
-> **What's new?**
->
-> See the [CHANGELOG.md](CHANGELOG.md) for information about new features,
-> improvements, and changes between releases.
-
 ## Prerequisites
 
 Before starting, make sure you have:
