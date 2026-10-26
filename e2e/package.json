@@ -1,0 +1,10 @@
+{
+  "name": "identity-link-e2e",
+  "private": true,
+  "description": "End-to-end tests for an Identity Link deployment; run them with run.sh",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@types/node": "^24.19.2"
+  }
+}

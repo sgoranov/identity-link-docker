@@ -98,3 +98,20 @@ After the environment has started, the following applications are available:
 
 The OIDC Test Client is based on `beryju/oidc-test-client` and can be used to test the 
 OpenID Connect flows provided by the Identity Link server.
+
+## End-to-end tests
+
+The end-to-end tests build the services from your clones in `src/`, as they are on disk, uncommitted changes
+included. They deploy them into a throwaway copy of this repository and test the deployment from a browser.
+They run alongside the development environment. See [e2e/README.md](../e2e/README.md).
+
+```bash
+# every test
+e2e/run.sh
+
+# only the tests of one page of the admin console
+e2e/run.sh -- tests/admin-console/users.spec.ts
+
+# choose tests in your browser and watch them run, at http://localhost:9323
+e2e/run.sh --ui
+```

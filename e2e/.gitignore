@@ -1,0 +1,4 @@
+.stack/
+node_modules/
+results/
+.run.lock
