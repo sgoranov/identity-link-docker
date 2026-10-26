@@ -1,0 +1,5 @@
+# .stack holds the generated secrets of the test deployment; keep them out of the image.
+.stack
+node_modules
+results
+.run.lock

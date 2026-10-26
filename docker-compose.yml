@@ -4,7 +4,7 @@ services:
 
   identity-link-core:
     container_name: identity-link-core
-    image: ghcr.io/sgoranov/identity-link-core:1.1.1
+    image: ghcr.io/sgoranov/identity-link-core:1.2.0
     environment:
       CONSENT_SCREEN_ENABLED: true
       LOGIN_TWO_FA_ENABLED: true
@@ -25,7 +25,7 @@ services:
 
   identity-link-db-users:
     container_name: identity-link-db-users
-    image: ghcr.io/sgoranov/identity-link-db-users:1.1.1
+    image: ghcr.io/sgoranov/identity-link-db-users:1.2.0
     environment:
       JWT_URL: https://${DOMAIN_NAME}/identity-link
       RESET_PASSWORD_REDIRECT_URL: https://${DOMAIN_NAME}/login/password/{id}
@@ -45,7 +45,7 @@ services:
 
   identity-link-db-clients:
     container_name: identity-link-db-clients
-    image: ghcr.io/sgoranov/identity-link-db-clients:1.1.1
+    image: ghcr.io/sgoranov/identity-link-db-clients:1.2.0
     environment:
       JWT_URL: https://${DOMAIN_NAME}/identity-link
     depends_on:
@@ -62,10 +62,9 @@ services:
 
   identity-link-2fa:
     container_name: identity-link-2fa
-    image: ghcr.io/sgoranov/identity-link-2fa:1.1.1
+    image: ghcr.io/sgoranov/identity-link-2fa:1.2.0
     environment:
       JWT_URL: https://${DOMAIN_NAME}/identity-link
-      TWO_FA_REDIRECT_URI: https://${DOMAIN_NAME}/login/2fa
     depends_on:
       identity-link-database-server:
         condition: service_healthy
@@ -80,7 +79,7 @@ services:
 
   identity-link-bff:
     container_name: identity-link-bff
-    image: ghcr.io/sgoranov/identity-link-bff:1.1.1
+    image: ghcr.io/sgoranov/identity-link-bff:1.2.0
     environment:
       OIDC_WELL_KNOWN_URL: https://${DOMAIN_NAME}/.well-known/openid-configuration
       POST_LOGIN_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console
@@ -91,7 +90,7 @@ services:
 
   identity-link-console:
     container_name: identity-link-console
-    image: ghcr.io/sgoranov/identity-link-console:1.1.0
+    image: ghcr.io/sgoranov/identity-link-console:1.2.1
     environment:
       VITE_MAX_USER_GROUPS: 20
       VITE_MAX_CLIENT_GROUPS: 20

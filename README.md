@@ -4,11 +4,6 @@ This repository provides a streamlined way to run the complete **Identity Link**
 using **Docker** and **Docker Compose**.
 The following guide explains how to configure, initialize, start, and manage an Identity Link deployment.
 
-> **What's new?**
->
-> See the [CHANGELOG.md](CHANGELOG.md) for information about new features,
-> improvements, and changes between releases.
-
 ## Prerequisites
 
 Before starting, make sure you have:
@@ -52,7 +47,7 @@ Replace your-domain.com and admin@your-domain.com with your actual domain and em
 ```bash
 docker run --rm -it \
   -p 80:80 \
-  -v "$PWD/letsencrypt:/etc/letsencrypt" \
+  -v "$PWD/config/letsencrypt:/etc/letsencrypt" \
   certbot/certbot certonly \
   --standalone \
   -d your-domain.com \
@@ -66,11 +61,30 @@ docker run --rm -it \
 Certificates can be renewed using the same Certbot Docker image:
 
 ```bash
+# Port 80 must be free, so stop the proxy first
+docker compose stop identity-link-proxy
 docker run --rm \
   -p 80:80 \
-  -v "$PWD/letsencrypt:/etc/letsencrypt" \
+  -v "$PWD/config/letsencrypt:/etc/letsencrypt" \
   certbot/certbot renew
+docker compose start identity-link-proxy
 ```
+
+### Verify the certificates
+
+Check the expiry date of the certificate on disk:
+
+```bash
+openssl x509 -enddate -noout -in config/letsencrypt/live/your-domain.com/fullchain.pem
+```
+
+Check the certificate actually served by the proxy:
+
+```bash
+echo | openssl s_client -connect your-domain.com:443 -servername your-domain.com 2>/dev/null | openssl x509 -noout -enddate
+```
+
+Both should show the same `notAfter=` date. If the served one is older, restart the proxy with `docker compose restart proxy`.
 
 ### Configure certificate paths
 
@@ -152,6 +166,28 @@ Once Identity Link is running, you can use the administration console to manage:
 
 The OpenID Connect discovery endpoint is available at: https://your-domain.com/.well-known/openid-configuration.
 Use this endpoint to configure your applications and integrate them with Identity Link.
+
+### Create a sign-in client
+
+To register an application that signs users in with OpenID Connect, run:
+
+```bash
+/bin/bash bin/create-client.sh \
+  --audience https://app.example.com \
+  --redirect-uri https://app.example.com/callback
+```
+
+The script names the client after the audience, here `app-example-com`, and:
+
+* declares the audience in `config/authorization/client-app-example-com.yaml`, unless it is declared already;
+* creates the group `app-example-com` with the OpenID Connect scopes (`oidc.default`) for the audience;
+* creates the client with that group, the `authorization_code` and `refresh_token` grant types and a secret,
+  and prints the client ID and secret.
+
+The client secret is shown only once, so store it securely. `--redirect-uri` can be repeated. The optional `--name`
+sets the client and group name, and `--description` sets the client description. Users need no extra configuration,
+because every user holds the OpenID Connect scopes.
+The application must request the scopes it needs, for example `openid profile email offline_access`.
 
 ## Troubleshooting
 

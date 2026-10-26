@@ -1,0 +1,122 @@
+# End-to-end test overlay. e2e/run.sh copies it into e2e/.stack, a throwaway deployment of this repository,
+# and loads it after docker-compose.yml and docker-compose.prod.yml.
+#
+# The Identity Link services are built from the clones in src/ of this checkout (docs/DEVELOPMENT.md), as they
+# are on disk; the paths are relative to e2e/.stack. Their image names are reset, so the builds do not replace
+# the ghcr.io images docker-compose.yml names.
+#
+# The stack must not collide with a development stack on the same machine, so the fixed container names, the
+# network name and the published ports are reset. The proxy answers to ${DOMAIN_NAME} inside the network
+# instead, and the tests run in identity-link-e2e-runner on that network.
+
+x-healthcheck: &healthcheck
+  # Check every second while the service starts, so the stack is ready as soon as it can be. Afterwards the
+  # interval of the healthcheck applies.
+  start_period: 120s
+  start_interval: 1s
+
+services:
+
+  identity-link-core:
+    container_name: !reset null
+    image: !reset null
+    build:
+      context: ../../src/identity-link-core
+      target: prod
+    healthcheck: *healthcheck
+
+  identity-link-db-users:
+    container_name: !reset null
+    image: !reset null
+    build:
+      context: ../../src/identity-link-db-users
+      target: prod
+    healthcheck: *healthcheck
+
+  identity-link-db-clients:
+    container_name: !reset null
+    image: !reset null
+    build:
+      context: ../../src/identity-link-db-clients
+      target: prod
+    healthcheck: *healthcheck
+
+  identity-link-2fa:
+    container_name: !reset null
+    image: !reset null
+    build:
+      context: ../../src/identity-link-2fa
+      target: prod
+    healthcheck: *healthcheck
+
+  identity-link-bff:
+    container_name: !reset null
+    image: !reset null
+    build:
+      context: ../../src/identity-link-bff
+      target: prod
+    # The healthcheck of the FrankenPHP image, which would otherwise first run after Docker's default 30 seconds.
+    healthcheck: *healthcheck
+    # The BFF reaches the other services through the proxy, which ${DOMAIN_NAME} resolves to inside the network.
+    extra_hosts: !reset []
+    volumes:
+      - ./config/certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        update-ca-certificates
+        exec /entrypoint.sh frankenphp run --config /etc/caddy/Caddyfile
+
+  identity-link-console:
+    container_name: !reset null
+    image: !reset null
+    build:
+      context: ../../src/identity-link-console
+      target: prod
+
+  identity-link-proxy:
+    container_name: !reset null
+    ports: !reset []
+    networks:
+      identity-link-network:
+        aliases:
+          - ${DOMAIN_NAME}
+
+  identity-link-database-server:
+    container_name: !reset null
+    healthcheck: *healthcheck
+
+  identity-link-redis:
+    container_name: !reset null
+
+  # Log collection is not under test. Start it with --profile logs.
+  identity-link-vector:
+    container_name: !reset null
+    profiles: [ logs ]
+
+  identity-link-log-retention:
+    container_name: !reset null
+    profiles: [ logs ]
+
+  identity-link-e2e-runner:
+    build:
+      context: ..
+    profiles: [ runner ]
+    user: ${E2E_USER:-node}
+    # Recommended for Chromium, which otherwise can run out of shared memory.
+    ipc: host
+    env_file:
+      - path: ./runner.env
+        required: false
+    environment:
+      HOME: /tmp
+      E2E_BASE_URL: https://${DOMAIN_NAME}
+    volumes:
+      - ../results:/e2e/results
+    networks:
+      - identity-link-network
+
+networks:
+  identity-link-network:
+    name: !reset null

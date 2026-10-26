@@ -34,15 +34,16 @@ transforms:
           }
         }
 
-        if channel == "rest" {
-          .monolog_channel = "rest"
-        } else if channel == "deprecation" {
+        if channel == "deprecation" {
           .monolog_channel = "deprecation"
         } else if channel == "system" {
           .monolog_channel = "system"
         } else {
           .monolog_channel = "application"
         }
+      } else if starts_with(container_name, "identity-link-proxy") && .stream == "stdout" {
+        # nginx writes the access log to stdout and its errors to stderr.
+        .monolog_channel = "access"
       } else {
         .monolog_channel = "system"
       }

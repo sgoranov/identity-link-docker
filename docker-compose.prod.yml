@@ -79,7 +79,9 @@ services:
       POSTGRES_USER_FILE: /run/secrets/db_user
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $$(cat /run/secrets/db_user)" ]
+      # Over TCP: while the image initializes a new data directory, it runs a temporary server that listens only on
+      # the Unix socket, and the services would fail to connect.
+      test: [ "CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$(cat /run/secrets/db_user)" ]
       interval: 5s
       timeout: 5s
       retries: 5
