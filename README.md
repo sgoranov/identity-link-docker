@@ -84,7 +84,7 @@ Check the certificate actually served by the proxy:
 echo | openssl s_client -connect your-domain.com:443 -servername your-domain.com 2>/dev/null | openssl x509 -noout -enddate
 ```
 
-Both should show the same `notAfter=` date. If the served one is older, restart the proxy with `docker compose restart proxy`.
+Both should show the same `notAfter=` date. If the served one is older, restart the proxy with `docker compose restart identity-link-proxy`.
 
 ### Configure certificate paths
 
