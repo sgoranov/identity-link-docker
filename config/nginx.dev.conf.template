@@ -58,6 +58,21 @@ http {
             proxy_set_header X-Request-Id $req_id;
         }
 
+        # OpenID Connect Discovery 1.0 puts the discovery document at <issuer>/.well-known/openid-configuration, and
+        # libraries that find the provider from its issuer request it there. The issuer (JWT_URL in docker-compose.yml)
+        # has a path, e.g. https://${DOMAIN_NAME}/identity-link, but core serves the document only at the root, so
+        # this serves the same document under the issuer too. ISSUER_PATH comes from JWT_URL.
+        location = ${ISSUER_PATH}/.well-known/openid-configuration {
+            set $core http://identity-link-core:9000;
+            rewrite ^ /.well-known/openid-configuration break;
+            proxy_pass $core;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Request-Id $req_id;
+        }
+
         location /users/ {
             set $users http://identity-link-db-users:9001;
             rewrite ^/users(/.*)$ $1 break;
