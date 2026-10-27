@@ -66,9 +66,13 @@ docker compose stop identity-link-proxy
 docker run --rm \
   -p 80:80 \
   -v "$PWD/config/letsencrypt:/etc/letsencrypt" \
-  certbot/certbot renew
+  certbot/certbot renew \
+  --no-random-sleep-on-renew
 docker compose start identity-link-proxy
 ```
+
+Without a terminal, as here and when run from cron, `certbot renew` waits a random time of up to 8 minutes before it
+renews a certificate, and the proxy stays stopped all that time. `--no-random-sleep-on-renew` turns the wait off.
 
 ### Verify the certificates
 
