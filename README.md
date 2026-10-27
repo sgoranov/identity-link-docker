@@ -217,13 +217,21 @@ To restart the deployment:
 docker compose restart
 ```
 
-### Pull updates
+### Update Identity Link
 
-To download the latest Identity Link images from the configured container registry:
+`docker-compose.yml` pins the version of each Identity Link image, so `docker compose pull` alone does not update
+Identity Link: it updates only the images without a fixed version, such as nginx and Redis. To update to the latest
+release, get the new `docker-compose.yml` first, then pull the images and recreate the containers:
 
 ```bash
+git pull
 docker compose pull
+docker compose up -d --force-recreate
 ```
+
+The services do not need to be stopped first. `--force-recreate` recreates every container, also those whose image
+has not changed: the proxy and Vector read their configuration from files in this checkout, and a running container
+keeps the file it was started with, even after `git pull` replaces it.
 
 ## Further reading
 
