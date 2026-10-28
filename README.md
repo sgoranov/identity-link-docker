@@ -66,9 +66,13 @@ docker compose stop identity-link-proxy
 docker run --rm \
   -p 80:80 \
   -v "$PWD/config/letsencrypt:/etc/letsencrypt" \
-  certbot/certbot renew
+  certbot/certbot renew \
+  --no-random-sleep-on-renew
 docker compose start identity-link-proxy
 ```
+
+Without a terminal, as here and when run from cron, `certbot renew` waits a random time of up to 8 minutes before it
+renews a certificate, and the proxy stays stopped all that time. `--no-random-sleep-on-renew` turns the wait off.
 
 ### Verify the certificates
 
@@ -84,7 +88,7 @@ Check the certificate actually served by the proxy:
 echo | openssl s_client -connect your-domain.com:443 -servername your-domain.com 2>/dev/null | openssl x509 -noout -enddate
 ```
 
-Both should show the same `notAfter=` date. If the served one is older, restart the proxy with `docker compose restart proxy`.
+Both should show the same `notAfter=` date. If the served one is older, restart the proxy with `docker compose restart identity-link-proxy`.
 
 ### Configure certificate paths
 
@@ -217,13 +221,21 @@ To restart the deployment:
 docker compose restart
 ```
 
-### Pull updates
+### Update Identity Link
 
-To download the latest Identity Link images from the configured container registry:
+`docker-compose.yml` pins the version of each Identity Link image, so `docker compose pull` alone does not update
+Identity Link: it updates only the images without a fixed version, such as nginx and Redis. To update to the latest
+release, get the new `docker-compose.yml` first, then pull the images and recreate the containers:
 
 ```bash
+git pull
 docker compose pull
+docker compose up -d --force-recreate
 ```
+
+The services do not need to be stopped first. `--force-recreate` recreates every container, also those whose image
+has not changed: the proxy and Vector read their configuration from files in this checkout, and a running container
+keeps the file it was started with, even after `git pull` replaces it.
 
 ## Further reading
 

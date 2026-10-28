@@ -8,8 +8,12 @@ if [[ $# -ne 1 ]]; then
 fi
 
 USERNAME="$1"
-CONTAINER="identity-link-db-users"
 
-docker exec -it "$CONTAINER" \
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT"
+
+docker compose exec -T identity-link-db-users \
     php bin/console app:reset-user-password \
     --username "$USERNAME"
