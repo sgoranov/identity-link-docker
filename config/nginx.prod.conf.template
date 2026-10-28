@@ -51,8 +51,10 @@ http {
         ssl_prefer_server_ciphers on;
         ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
 
+        # After the first visit, browsers use HTTPS for the domain for a year, even for an http:// link. Not with
+        # includeSubDomains: other subdomains of the domain may not be served over HTTPS.
+        add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Frame-Options "SAMEORIGIN" always;
-        add_header X-XSS-Protection "1; mode=block" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
