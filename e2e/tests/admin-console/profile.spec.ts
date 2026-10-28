@@ -33,7 +33,7 @@ test.describe('the administrator', () => {
         await expect(switchField(main, 'Two-factor authentication')).toHaveAttribute('aria-checked', 'false');
 
         const access = main.locator('.ant-descriptions').filter({ hasText: 'Access' });
-        await expect(access.locator('.ant-tag')).toHaveText([...allScopes, 'Password', 'Authorization Code', 'Refresh Token']);
+        await expect(access.locator('.ant-tag')).toHaveText([...allScopes, 'Authorization Code', 'Refresh Token']);
     });
 
     test('the start page is the profile', async ({ page }) => {

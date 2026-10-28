@@ -43,12 +43,9 @@ docker compose exec -T identity-link-db-clients \
   --group "$GROUP_NAME" \
   --redirect-uri "$REDIRECT_URIS" \
   --grant-type client_credentials \
-  --grant-type password \
   --grant-type authorization_code \
   --grant-type refresh_token \
   > "$TMP_OUTPUT"
-
-cat "$TMP_OUTPUT"
 
 EXTRACTED_ID=$(sed -n 's/^[[:space:]]*Client ID[[:space:].]*//p' "$TMP_OUTPUT" | tr -d '[:space:]')
 EXTRACTED_SECRET=$(sed -n 's/^[[:space:]]*Client secret[[:space:].]*//p' "$TMP_OUTPUT" | tr -d '[:space:]')
@@ -92,7 +89,6 @@ docker compose exec -T identity-link-db-users \
     --last-name "$USER_LAST_NAME" \
     --password="$USER_PASSWORD" \
     --group "$GROUP_NAME" \
-    --grant-type password \
     --grant-type authorization_code \
     --grant-type refresh_token
 
