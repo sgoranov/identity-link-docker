@@ -28,7 +28,7 @@ services:
 
   identity-link-db-users:
     container_name: identity-link-db-users
-    image: ghcr.io/sgoranov/identity-link-db-users:1.2.0
+    image: ghcr.io/sgoranov/identity-link-db-users:1.2.1
     environment:
       JWT_URL: *jwt-url
       RESET_PASSWORD_REDIRECT_URL: https://${DOMAIN_NAME}/login/password/{id}
