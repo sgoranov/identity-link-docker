@@ -122,6 +122,7 @@ These spec files cover what a user goes through to sign in to an application:
 | `consent.spec.ts`        | The consent screen of a client that requires consent: what it shows, Allow and Deny.     |
 | `two-factor.spec.ts`     | Setting up two-factor authentication at the first sign-in, the code at later sign-ins, wrong codes, resetting the secret, and two-factor authentication with consent and in the console. |
 | `reset-password.spec.ts` | Resetting a forgotten password from the login form, with the email db-users sends.      |
+| `rate-limits.spec.ts`    | The limit on failed logins, which a client cannot escape with an `X-Forwarded-For` of its own. |
 
 Core accepts authorization requests only for audiences declared in its configuration, so the clients these tests
 create share the audience of the client `run.sh` registers.
@@ -130,9 +131,10 @@ The two-factor tests act as the user's authenticator app: they read the secret f
 authentication and compute the codes. The console has no action to reset a secret, so the tests reset it through
 the API of the 2FA service.
 
-db-users accepts five password reset requests an hour from one address, and as the proxy does not pass on the
-address of the client, every request comes from the same one. `reset-password.spec.ts` sends two, so a deployment
-kept with `--keep` runs it twice an hour.
+The services limit some requests per client address, and the tests all come from the runner's. db-users accepts
+five password reset requests an hour, and `reset-password.spec.ts` sends two, so a deployment kept with `--keep` runs
+it twice an hour. Core accepts 20 failed logins in ten minutes, and `rate-limits.spec.ts` fails five, so it runs three
+times in ten minutes; a fourth run would lock out the tests that sign in after it.
 
 ## The admin console tests
 

@@ -15,8 +15,8 @@ import {
 // then sends them back to the login form of the same sign-in. docker-compose.e2e.yml turns it on and catches the
 // emails.
 //
-// db-users accepts five reset requests an hour from one address, and every request reaches it from the proxy, so
-// the tests send one each: two a run. A deployment kept with --keep runs them twice within an hour.
+// db-users accepts five reset requests an hour from one address, and the tests all come from the runner's, so they
+// send one each: two a run. A deployment kept with --keep runs them twice within an hour.
 
 const checkEmailMessage = 'If your email exists in our system, you will receive a link to reset your password.';
 
