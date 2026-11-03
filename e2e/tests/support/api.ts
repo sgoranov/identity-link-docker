@@ -1,7 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import { expect, request, type APIRequestContext, type APIResponse } from '@playwright/test';
+import { test as base, expect, request, type APIRequestContext, type APIResponse } from '@playwright/test';
 import { env } from './env';
 import { basicAuth } from './oidc';
+
+export { expect };
 
 // The records of db-users and db-clients, as their APIs return them.
 
@@ -57,6 +59,9 @@ export type Secret = {
 export type UserInput = Omit<User, 'id' | 'groups' | 'isSystem'> & { password: string; groups: string[] };
 
 export type ClientInput = Omit<Client, 'id' | 'groups' | 'isSystem' | 'public'> & { groups: string[]; isPublic: boolean };
+
+// A client that signs users in with the authorization code flow, with its secret and its one redirect URI.
+export type SignInClient = { id: string; name: string; secret: string; redirectUri: string };
 
 // A name no other test uses, also on a deployment kept from an earlier run. It is valid for every kind of record.
 export function uniqueName(prefix: string): string {
@@ -237,6 +242,35 @@ export class Api {
         return this.query<Secret>('clients', 'Secret', 'c.id = :value', clientId, { c: 't.client' });
     }
 
+    // A client like the one bin/create-client.sh registers: a group of its own gives it the OpenID Connect scopes.
+    // Core accepts authorization requests only for audiences declared in its configuration, which the tests cannot
+    // change, so it shares the audience of the sign-in client that e2e/run.sh registers.
+    async createSignInClient(input: Partial<ClientInput> = {}): Promise<SignInClient> {
+        const name = input.name ?? uniqueName('e2e-app');
+        const audience = env.rpClient.audience;
+        const redirectUri = `${audience}/${name}/callback`;
+        const group = await this.createClientGroup(name, ['oidc.default'], audience);
+        const client = await this.createClient({
+            audience,
+            redirectUri: [redirectUri],
+            groups: [group.id],
+            grantTypes: ['authorization_code'],
+            ...input,
+            name,
+        });
+        const secret = await this.issueSecret(client.id);
+
+        return { id: client.id, name, secret: secret.password, redirectUri };
+    }
+
+    // Two-factor authentication
+
+    // Makes the user set up two-factor authentication again at their next sign-in, with a new secret, as for a user
+    // who lost their authenticator app. The console has no action for it.
+    async resetTwoFaSecret(userId: string): Promise<void> {
+        await this.send('PUT', `/2fa/api/v1/user/${userId}/reset-secret`);
+    }
+
     private async query<T>(
         service: 'users' | 'clients',
         type: string,
@@ -271,3 +305,13 @@ export class Api {
         });
     }
 }
+
+// The test of the specs outside the admin console. The console tests use the test of console.ts, which builds on it.
+export const test = base.extend<{ api: Api }>({
+    // The APIs of the services, to set up records and check them.
+    api: async ({}, use) => {
+        const api = await Api.create();
+        await use(api);
+        await api.dispose();
+    },
+});

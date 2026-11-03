@@ -8,6 +8,10 @@
 # The stack must not collide with a development stack on the same machine, so the fixed container names, the
 # network name and the published ports are reset. The proxy answers to ${DOMAIN_NAME} inside the network
 # instead, and the tests run in identity-link-e2e-runner on that network.
+#
+# docker-compose.prod.yml turns password reset off, as a deployment has no mail server to send the reset links
+# with. The tests turn it on again and send the emails to identity-link-smtp-server, a mail catcher whose API they
+# read the emails from.
 
 x-healthcheck: &healthcheck
   # Check every second while the service starts, so the stack is ready as soon as it can be. Afterwards the
@@ -24,6 +28,9 @@ services:
       context: ../../src/identity-link-core
       target: prod
     healthcheck: *healthcheck
+    environment:
+      # The login form links to it.
+      RESET_PASSWORD_URL: https://${DOMAIN_NAME}/users/reset-password/{id}
 
   identity-link-db-users:
     container_name: !reset null
@@ -32,6 +39,10 @@ services:
       context: ../../src/identity-link-db-users
       target: prod
     healthcheck: *healthcheck
+    environment:
+      FEATURE_RESET_PASSWORD_ENABLED: true
+      MAILER_DSN: smtp://identity-link-smtp-server:1025
+      MAILER_FROM_ADDRESS: no-reply@${DOMAIN_NAME}
 
   identity-link-db-clients:
     container_name: !reset null
@@ -90,6 +101,14 @@ services:
   identity-link-redis:
     container_name: !reset null
 
+  # Catches the emails of db-users, see the top of this file. The tests read them through its API on port 8025.
+  identity-link-smtp-server:
+    image: axllent/mailpit:v1.32.0
+    # The healthcheck of the Mailpit image.
+    healthcheck: *healthcheck
+    networks:
+      - identity-link-network
+
   # Log collection is not under test. Start it with --profile logs.
   identity-link-vector:
     container_name: !reset null
@@ -112,6 +131,7 @@ services:
     environment:
       HOME: /tmp
       E2E_BASE_URL: https://${DOMAIN_NAME}
+      E2E_MAIL_URL: http://identity-link-smtp-server:8025
     volumes:
       - ../results:/e2e/results
     networks:
