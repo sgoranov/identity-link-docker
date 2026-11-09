@@ -8,7 +8,7 @@ services:
 
   identity-link-core:
     container_name: identity-link-core
-    image: ghcr.io/sgoranov/identity-link-core:1.2.0
+    image: ghcr.io/sgoranov/identity-link-core:1.2.1
     environment:
       LOGIN_TWO_FA_ENABLED: true
       JWT_URL: *jwt-url
@@ -28,7 +28,7 @@ services:
 
   identity-link-db-users:
     container_name: identity-link-db-users
-    image: ghcr.io/sgoranov/identity-link-db-users:1.2.1
+    image: ghcr.io/sgoranov/identity-link-db-users:1.2.2
     environment:
       JWT_URL: *jwt-url
       RESET_PASSWORD_REDIRECT_URL: https://${DOMAIN_NAME}/login/password/{id}
@@ -48,7 +48,7 @@ services:
 
   identity-link-db-clients:
     container_name: identity-link-db-clients
-    image: ghcr.io/sgoranov/identity-link-db-clients:1.2.0
+    image: ghcr.io/sgoranov/identity-link-db-clients:1.2.1
     environment:
       JWT_URL: *jwt-url
     depends_on:
@@ -65,7 +65,7 @@ services:
 
   identity-link-2fa:
     container_name: identity-link-2fa
-    image: ghcr.io/sgoranov/identity-link-2fa:1.2.0
+    image: ghcr.io/sgoranov/identity-link-2fa:1.2.1
     environment:
       JWT_URL: *jwt-url
     depends_on:
@@ -82,7 +82,7 @@ services:
 
   identity-link-bff:
     container_name: identity-link-bff
-    image: ghcr.io/sgoranov/identity-link-bff:1.2.0
+    image: ghcr.io/sgoranov/identity-link-bff:1.2.1
     environment:
       OIDC_WELL_KNOWN_URL: https://${DOMAIN_NAME}/.well-known/openid-configuration
       POST_LOGIN_REDIRECT_URL: https://${DOMAIN_NAME}/admin-console
