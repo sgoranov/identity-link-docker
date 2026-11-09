@@ -1,6 +1,6 @@
-import { test as base, expect, type BrowserContext, type Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import { chooseOptions } from './antd';
-import { Api } from './api';
+import { expect, test as base } from './api';
 import { env } from './env';
 import { submitLogin } from './oidc';
 
@@ -51,9 +51,8 @@ export async function searchUsers(page: Page, field: 'Name' | 'Email' | 'Usernam
     await search(page, 'Search users', term);
 }
 
+// The api fixture comes from the test of api.ts.
 type Fixtures = {
-    // The APIs of the services, to set up records and check what the console saved.
-    api: Api;
     // Opens a page in a new browser context: signed in with these credentials, as the administrator, or without a
     // session. For tests that need a second user next to the page of the test.
     newSession: (session?: Credentials | 'administrator') => Promise<Page>;
@@ -93,12 +92,6 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
         },
         { scope: 'worker' },
     ],
-
-    api: async ({}, use) => {
-        const api = await Api.create();
-        await use(api);
-        await api.dispose();
-    },
 
     newSession: async ({ browser, administratorState }, use) => {
         const contexts: BrowserContext[] = [];

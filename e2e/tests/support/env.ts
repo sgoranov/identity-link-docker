@@ -14,6 +14,11 @@ export const env = {
         return required('E2E_BASE_URL');
     },
 
+    // The API of the mail catcher that db-users sends its emails to, see docker-compose.e2e.yml.
+    get mailUrl() {
+        return required('E2E_MAIL_URL');
+    },
+
     // The administrator bin/provision-tenant.sh creates.
     get admin() {
         return {

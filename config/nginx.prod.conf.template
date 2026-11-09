@@ -58,12 +58,18 @@ http {
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
+        # Each location sets X-Forwarded-For to the address the request comes from, replacing the one the client
+        # sent. The services trust this proxy's header and limit failed logins and password reset requests per
+        # address, so without it all clients would share one limit, and a client could escape it with a header of
+        # its own.
+
         location / {
             set $core http://identity-link-core:9000;
             proxy_pass $core;
 
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-For $remote_addr;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Request-Id $req_id;
         }
@@ -79,6 +85,7 @@ http {
 
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-For $remote_addr;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Request-Id $req_id;
         }
@@ -90,6 +97,7 @@ http {
 
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-For $remote_addr;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Forwarded-Prefix /users;
@@ -102,6 +110,7 @@ http {
 
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-For $remote_addr;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Forwarded-Prefix /clients;
@@ -114,6 +123,7 @@ http {
 
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-For $remote_addr;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Forwarded-Prefix /2fa;
@@ -129,6 +139,7 @@ http {
 
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-For $remote_addr;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Real-IP $remote_addr;
@@ -143,6 +154,7 @@ http {
 
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-For $remote_addr;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Request-Id $req_id;
             proxy_set_header X-Real-IP $remote_addr;

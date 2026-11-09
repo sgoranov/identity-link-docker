@@ -32,6 +32,10 @@ The deployment uses `docker-compose.yml` and `docker-compose.prod.yml` with `doc
 has its own Compose project (`identity-link-e2e`), network and volumes, and publishes no ports, so it runs
 alongside a development stack. Your `.env` and `config/` are not used.
 
+`docker-compose.prod.yml` turns password reset off, as a deployment has no mail server to send the reset links
+with. `docker-compose.e2e.yml` turns it on again and sends the emails to Mailpit, a mail catcher the tests read them
+from.
+
 `bin/bootstrap-secrets.sh` loads only `docker-compose.yml`, so it generates the secrets with the core image that
 file names, which is pulled for that. All services run from the images built for the run.
 
@@ -108,6 +112,30 @@ of every test with `-- --trace on`.
 - `e2e/results/test-results`: the traces and other artifacts of failed tests.
 - `e2e/results/stack.log`: the logs of all services.
 
+## The sign-in tests
+
+These spec files cover what a user goes through to sign in to an application:
+
+| File                     | Covers                                                                                  |
+|--------------------------|-----------------------------------------------------------------------------------------|
+| `sign-in.spec.ts`        | The authorization code flow with PKCE, for the client `run.sh` registers.               |
+| `consent.spec.ts`        | The consent screen of a client that requires consent: what it shows, Allow and Deny.     |
+| `two-factor.spec.ts`     | Setting up two-factor authentication at the first sign-in, the code at later sign-ins, wrong codes, resetting the secret, and two-factor authentication with consent and in the console. |
+| `reset-password.spec.ts` | Resetting a forgotten password from the login form, with the email db-users sends.      |
+| `rate-limits.spec.ts`    | The limit on failed logins, which a client cannot escape with an `X-Forwarded-For` of its own. |
+
+Core accepts authorization requests only for audiences declared in its configuration, so the clients these tests
+create share the audience of the client `run.sh` registers.
+
+The two-factor tests act as the user's authenticator app: they read the secret from the page that sets up two-factor
+authentication and compute the codes. The console has no action to reset a secret, so the tests reset it through
+the API of the 2FA service.
+
+The services limit some requests per client address, and the tests all come from the runner's. db-users accepts
+five password reset requests an hour, and `reset-password.spec.ts` sends two, so a deployment kept with `--keep` runs
+it twice an hour. Core accepts 20 failed logins in ten minutes, and `rate-limits.spec.ts` fails five, so it runs three
+times in ten minutes; a fourth run would lock out the tests that sign in after it.
+
 ## The admin console tests
 
 `tests/admin-console` has a spec file for each page of the console, and two more:
@@ -147,10 +175,12 @@ Tests are Playwright tests in TypeScript under `tests/`. They reach the deployme
 
 | Module                   | Helpers                                                                                   |
 |--------------------------|-------------------------------------------------------------------------------------------|
-| `tests/support/oidc.ts`  | The discovery document, the token endpoint and the login form.                            |
-| `tests/support/api.ts`   | The APIs of db-users and db-clients, with a token of the BFF client, to set up records and check them. |
+| `tests/support/oidc.ts`  | The discovery document, the token endpoint, the login form and authorization requests in the browser. |
+| `tests/support/api.ts`   | The APIs of db-users, db-clients and 2fa, with a token of the BFF client, to set up records and check them; the `test` of the other tests, with the `api` fixture. |
 | `tests/support/console.ts` | The `test` of the console tests, signed in as the administrator, with the `api` and `newSession` fixtures; signing in, the menu and searching. |
 | `tests/support/antd.ts`  | Form fields by label, selects, switches, tables, notifications and confirmations of Ant Design. |
+| `tests/support/two-factor.ts` | The pages of the 2FA service, and the codes of an authenticator app.                 |
+| `tests/support/mail.ts`  | The emails db-users sends, from the mail catcher.                                          |
 
 The tests share one deployment, so they should not depend on each other's data. Each test creates the records it
 needs, with names from `uniqueName()`, and leaves them, also on a deployment kept with `--keep`. A test that
